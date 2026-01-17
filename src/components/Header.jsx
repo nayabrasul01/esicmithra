@@ -39,7 +39,7 @@ const Header = () => {
           style={{ height: '40px', objectFit: 'contain', marginRight: '10px' }}
           title="Hospital"
         />
-        <h3 style={{ margin: 0, fontWeight: 'bold', letterSpacing: '2px' }}>MITHRA</h3>
+        <h3 style={{ margin: 0, fontWeight: 'bold', letterSpacing: '2px' }}>MITRA</h3>
       </div>
       
       {/* Right Logo */}

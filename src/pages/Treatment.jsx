@@ -331,20 +331,24 @@ const Treatment = () => {
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <th style={{ width: '30%' }}>Name</th>
-                                                <td>{submittedData.patient.name}</td>
+                                                <th style={{ width: '30%' }}>Date</th>
+                                                <td>{new Date().toLocaleDateString()}</td>
                                             </tr>
                                             <tr>
                                                 <th>UHID</th>
                                                 <td>{submittedData.patient.uhid}</td>
                                             </tr>
                                             <tr>
+                                                <th style={{ width: '30%' }}>Name</th>
+                                                <td>{submittedData.patient.name}</td>
+                                            </tr>
+                                            <tr>
                                                 <th>Relation</th>
                                                 <td>{submittedData.patient.relationship}</td>
                                             </tr>
                                             <tr>
-                                                <th>DOB</th>
-                                                <td>{submittedData.patient.dob}</td>
+                                                <th>Age/Gender</th>
+                                                <td>{submittedData.patient.dob} {submittedData.patient.dob && <span>({calculateAge(submittedData.patient.dob)} yrs)/ ({submittedData.patient.gender})</span>}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -391,5 +395,28 @@ const styles = {
     padding: "20px"
   }
 };
+
+function calculateAge(dob) {
+    if (!dob) return '';
+    // Accepts formats like 'YYYY-MM-DD', 'DD-MM-YYYY', or with time
+    let dateStr = dob.split(' ')[0];
+    let parts = dateStr.includes('-') ? dateStr.split('-') : dateStr.split('/');
+    let year, month, day;
+    if (parts[0].length === 4) {
+        // YYYY-MM-DD
+        year = +parts[0]; month = +parts[1]; day = +parts[2];
+    } else {
+        // DD-MM-YYYY
+        day = +parts[0]; month = +parts[1]; year = +parts[2];
+    }
+    const birthDate = new Date(year, month - 1, day);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age;
+}
 
 export default Treatment;
