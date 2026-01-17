@@ -20,7 +20,8 @@ export default MainLayout;
 const styles = {
   wrapper: {
     width: "100vw",      // FULL SCREEN
-    minHeight: "100vh"
+    minHeight: "100vh",
+    backgroundColor: "#ffffff"
   },
   main: {
     width: "100%",

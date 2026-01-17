@@ -31,14 +31,19 @@ const hasVisited = sessionStorage.getItem('hasVisited');
     <div
       className="footer-area-bottom"
       style={{
-        background: '#5C100E',
+        background: '#093FB4',
         color: 'white',
         padding: '10px 40px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         flexWrap: 'wrap', // allow wrap on small screens
-        borderTop: '1px solid black'
+        borderTop: '1px solid black',
+        position: 'fixed',
+        left: 0,
+        bottom: 0,
+        width: '100%',
+        zIndex: 1000
       }}
     >
       {/* Left Section */}

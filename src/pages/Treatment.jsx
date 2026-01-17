@@ -2,42 +2,82 @@ import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  fetchPreviousPrescription,
-  submitPrescription
+    getDashboardData,
+    getHistory,
+    saveTreatment,
+    uploadFile,
+    downloadFile
 } from "../services/authService";
 
 const Treatment = () => {
     const { state: patient } = useLocation();
     const navigate = useNavigate();
     const [prevData, setPrevData] = useState(null);
-    const [complaints, setComplaints] = useState("");
-    const [diagnosis, setDiagnosis] = useState("");
-    const [prescription, setPrescription] = useState("");
+    
+    const [form,setForm]=useState({
+        chiefComplaints:"",
+        diagnosis:"",
+        prescription:""
+    });
+    const [history,setHistory]=useState([]);
+    const [loading,setLoading]=useState(true);
+    const [savedId,setSavedId]=useState(null);
     const [file, setFile] = useState(null);
     const [submittedData, setSubmittedData] = useState(null);
 
-  useEffect(() => {
-    checkPrevious();
-  }, []);
+    useEffect(() => {
+        if(patient)
+            fetchHistory();
+    }, []);
 
-  const checkPrevious = async () => {
-    const res = await fetchPreviousPrescription();
-    if (res.hasData) setPrevData(res);
-  };
-
-    const submit = async () => {
-        const payload = {
-        patient,
-        prescription: prescription,
-        complaints: complaints,
-        diagnosis: diagnosis,
-        file
+    const fetchHistory = async ()=>{
+        try{
+        console.log(patient);
+        const res = await getHistory(patient.uHID);
+        if(res.data.success)
+            setHistory(res.data.data);
+        }
+        finally{
+            setLoading(false);
+        }
     };
 
-    const res = await submitPrescription(payload);
-        if (res.success) {
-            alert("Submitted successfully");
-            setSubmittedData(payload);
+    const handleChange = e =>{
+        setForm({
+        ...form,
+        [e.target.name]:e.target.value
+        });
+    };
+
+    const handleSubmit = async ()=>{
+        // Format dob to dd-mm-yyyy
+        let dob = patient.dob;
+        if (dob && typeof dob === 'string') {
+            const parts = dob.split(' ')[0].split('-');
+            if (parts.length === 3) {
+                dob = `${parts[0]}-${parts[1]}-${parts[2]}`;
+            }
+        }
+        const payload={
+            uhid: patient.uHID,
+            name: patient.name,
+            relationship: patient.relationship,
+            gender: patient.sex,
+            dob: dob,
+            state: patient.residingState,
+            ...form
+        };
+        try {
+            const res = await saveTreatment(payload);
+            if(res.data.success){
+                setSavedId(res.data.data.id);
+                setSubmittedData(res.data.data);
+                alert("Saved successfully");
+            } else {
+                alert(res.data.message || "Failed to save treatment");
+            }
+        } catch (error) {
+            alert(error?.response?.data?.message || error.message || "An error occurred while saving treatment");
         }
     };
 
@@ -45,136 +85,306 @@ const Treatment = () => {
         window.print();
     };
 
-
-    /* ---------- AFTER SUBMIT VIEW ---------- */
-    if (submittedData) {
-        return (
-        <div>
-            <h2>Treatment Submitted Successfully</h2>
-
-            <h4>Patient Details</h4>
-            <p><b>Name:</b> {submittedData.patient.name}</p>
-            <p><b>Relation:</b> {submittedData.patient.relationship}</p>
-            <p><b>DOB:</b> {submittedData.patient.dob}</p>
-
-            <h4>Cheif Complaints</h4>
-            <p>{submittedData.complaints}</p>
-
-            <h4>Diagnosis</h4>
-            <p>{submittedData.diagnosis}</p>
-
-            <h4>Prescription</h4>
-            <p>{submittedData.prescription}</p>
-
-            {submittedData.fileName && (
-            <p><b>Uploaded File:</b> {submittedData.fileName}</p>
-            )}
-
-            <button onClick={handlePrint}>🖨 Print</button> 
-            <button style={{marginLeft: 10}} onClick={() => navigate('/dashboard')}>Home</button>
-        </div>
-        );
+    const handleUpload = async(treatmentId,file)=>{
+        try{
+            const res = await uploadFile(treatmentId,file);
+            alert(res.data.message);
+            fetchHistory(); // refresh table
+        }catch(e){
+            alert(e.response.data.message);
+        }
     }
 
+    const download = async(docId)=>{
+        try {
+            const response = await downloadFile(docId);
+            const blob = new Blob(
+                [response.data],
+                { type: response.headers["content-type"] } // 👈 important
+            );
+
+            const disposition =
+            response.headers["content-disposition"];
+
+            let filename = "file.pdf";
+
+            if (disposition && disposition.includes("filename=")) {
+            filename = disposition
+                .split("filename=")[1]
+                .replaceAll('"', "");
+            }
+
+            const url = window.URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+        } catch (err) {
+            console.error(err);
+            alert("Download failed");
+        }
+    }
+
+
+
+    if(!patient) return <p>No patient</p>;
+    if(loading) return <p>Loading...</p>;
+
+    /* ---------- AFTER SUBMIT VIEW ---------- */
+     return !savedId ?
     /* ---------- FORM VIEW ---------- */
-    return (
-        <div style={styles.container}>
-        <h2>ESIC Health facility</h2>
+        (
+            <div className="container py-4" style={{ maxWidth: '90%' }}>
+                <div className="row justify-content-center">
+                    <div className="col-md-8">
+                        <div className="card mb-4 shadow">
+                            <div className="card-body">
+                                <h4 className="card-title text-center mb-4">ESIC Health Facility</h4>
+                                {/* <h5 className="mb-3"><u>IP Details</u></h5> */}
+                                <div className="table-responsive">
+                                    <table className="table table-bordered table-striped mb-0">
+                                        <thead className="table-light">
+                                            <tr>
+                                                <th colSpan={2} style={{ textAlign: "center" }}>IP details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <th style={{ width: '30%' }}>Name</th>
+                                                <td>{patient.name}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>UHID</th>
+                                                <td>{patient.uHID}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Relation</th>
+                                                <td>{patient.relationship}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>DOB</th>
+                                                <td>{patient.dob}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
 
-        <h4><u>Patient Details</u></h4>
-        <p><b>Name:</b> {patient.name}</p>
-        <p><b>Relation:</b> {patient.relationship}</p>
-        <p><b>DOB:</b> {patient.dob}</p>
+                        {/* HISTORY TABLE */}
+                        {history.length > 0 && (
+                            <div className="card mb-4 shadow">
+                                <div className="card-body">
+                                    {/* <h5 className="card-title mb-3">Previous Treatments</h5> */}
+                                    <div className="table-responsive">
+                                        <table className="table table-bordered table-hover text-center">
+                                            <thead className="table-light">
+                                                <tr>
+                                                    <th colSpan={6}>Previous Treatments</th>
+                                                </tr>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Complaint</th>
+                                                    <th>Diagnosis</th>
+                                                    <th>Prescription</th>
+                                                    <th>Option</th>
+                                                    <th>Files</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {history.map((h, i) => (
+                                                    <tr key={i}>
+                                                        <td>{h.treatment.createdAt ? h.treatment.createdAt.split('T')[0] : ''}</td>
+                                                        <td>{h.treatment.chiefComplaints}</td>
+                                                        <td>{h.treatment.diagnosis}</td>
+                                                        <td>{h.treatment.prescription}</td>
+                                                        <td>
+                                                            {h.documents && h.documents.length > 0 ? (
+                                                                <span className="text-success fw-semibold">
+                                                                    Uploaded
+                                                                </span>
+                                                            ) : (
+                                                                <input
+                                                                    type="file"
+                                                                    className="form-control form-control-sm"
+                                                                    onChange={(e) =>
+                                                                        handleUpload(h.treatment.id, e.target.files[0])
+                                                                    }
+                                                                />
+                                                            )}
+                                                        </td>
+                                                        <td>
+                                                            {h.documents && h.documents.length > 0 ? (
+                                                                h.documents.map((d, idx) => (
+                                                                    <a
+                                                                        key={idx}
+                                                                        onClick={() => download(d.id)}
+                                                                        target="_blank"
+                                                                        className="btn btn-link btn-sm p-0"
+                                                                        style={{ textDecoration: 'none', cursor: 'pointer' }}
+                                                                    >
+                                                                    <i class="fi fi-rr-download" alt="Uploaded File"></i>
+                                                                    </a>
+                                                                ))
+                                                            ) : (
+                                                                <span className="text-muted">No data</span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-        { prevData && (
-        <>
-            <h4>Previous Treatment Records</h4>
-
-            <table border="1" cellPadding="8" style={{ marginBottom: "20px" }}>
-            <thead>
-                <tr>
-                <th>Prescription</th>
-                <th>Document</th>
-                <th>Upload New Document</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                <tr>
-                <td>{prevData.prescription}</td>
-
-                <td>
-                    {prevData.document ? (
-                    <a href="#" onClick={() => alert("Download API call")}>
-                        {prevData.document}
-                    </a>
-                    ) : (
-                    "No document"
-                    )}
-                </td>
-
-                <td>
-                    <input
-                    type="file"
-                    onChange={(e) => setFile(e.target.files[0])}
-                    />
-                </td>
-                </tr>
-            </tbody>
-            </table>
-            <button
-                onClick={() => window.history.back()}
-                style={{ marginTop: "5px" }}
-            >
-            Back
-            </button>
-
-        </>
-        )}
-
-        { prevData && (
-            <div>
-                <h4>New Treatment Plan</h4>
-                <textarea
-                    placeholder="Chief Complaints"
-                    rows="6"
-                    cols="60"
-                    value={complaints}
-                    onChange={(e) => setComplaints(e.target.value)}
-                />
-                 <br /><br />
-
-                <textarea
-                    placeholder="Diagnosis"
-                    rows="6"
-                    cols="60"
-                    value={diagnosis}
-                    onChange={(e) => setDiagnosis(e.target.value)}
-                />
-                 <br /><br />
-
-                <textarea
-                    placeholder="Prescription"
-                    rows="6"
-                    cols="60"
-                    value={prescription}
-                    onChange={(e) => setPrescription(e.target.value)}
-                />
-                <br />
-                <button
-                    disabled={!complaints || !diagnosis || !prescription}
-                    onClick={submit}
-                    style={{ marginTop: "10px" }}
-                >
-                    Submit
-                </button>
-                
+                        <div className="card mb-4 shadow">
+                            {/* <div className="card-header text-center">
+                                New Treatment Plan
+                            </div> */}
+                            <div className="card-body">
+                                <h5 className="card-title text-center mb-3">New Treatment Plan</h5>
+                                <form onSubmit={e => { e.preventDefault(); handleSubmit(); }}>
+                                    <div className="mb-3">
+                                        {/* <label htmlFor="chiefComplaints" className="form-label">Chief Complaints</label> */}
+                                        <textarea
+                                            className="form-control"
+                                            id="chiefComplaints"
+                                            name="chiefComplaints"
+                                            placeholder="Chief Complaints"
+                                            rows="3"
+                                            value={form.chiefComplaints}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        {/* <label htmlFor="diagnosis" className="form-label">Diagnosis</label> */}
+                                        <textarea
+                                            className="form-control"
+                                            id="diagnosis"
+                                            name="diagnosis"
+                                            placeholder="Diagnosis"
+                                            rows="3"
+                                            value={form.diagnosis}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        {/* <label htmlFor="prescription" className="form-label">Prescription</label> */}
+                                        <textarea
+                                            className="form-control"
+                                            id="prescription"
+                                            name="prescription"
+                                            placeholder="Prescription"
+                                            rows="3"
+                                            value={form.prescription}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+                                    <div className="d-flex justify-content-between">
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary"
+                                            disabled={
+                                                !form.chiefComplaints ||
+                                                !form.diagnosis ||
+                                                !form.prescription
+                                            }
+                                        >
+                                            Submit
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary ms-2"
+                                            onClick={() => navigate('/dashboard')}
+                                        >
+                                            Back
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        )}
-        
-        </div>
-    );
-};
+        )
+        : (
+            <div className="container py-4">
+                <div className="row justify-content-center">
+                    <div className="col-md-8">
+                        <div className="card shadow">
+                            <div className="card-body">
+                                {/* <h4 className="card-title mb-3">Patient Details</h4> */}
+                                <div className="table-responsive mb-4">
+                                    <table className="table table-bordered table-striped mb-0">
+                                        <thead className="table-light">
+                                            <tr>
+                                                <th colSpan={2} style={{ textAlign: "center" }}>Patient Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <th style={{ width: '30%' }}>Name</th>
+                                                <td>{submittedData.patient.name}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>UHID</th>
+                                                <td>{submittedData.patient.uhid}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Relation</th>
+                                                <td>{submittedData.patient.relationship}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>DOB</th>
+                                                <td>{submittedData.patient.dob}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {/* <hr /> */}
+                                <div className="mb-2">
+                                    <h5 className="mb-1">Chief Complaints:</h5>
+                                    <p>{submittedData.chiefComplaints}</p>
+                                </div>
+                                <div className="mb-2">
+                                    <h5 className="mb-1">Diagnosis:</h5>
+                                    <p>{submittedData.diagnosis}</p>
+                                </div>
+                                <div className="mb-2">
+                                    <h5 className="mb-1">Prescription:</h5>
+                                    <p>{submittedData.prescription}</p>
+                                </div>
+                                {submittedData.fileName && (
+                                    <div className="mb-2">
+                                        <b>Uploaded File: </b> {submittedData.fileName}
+                                    </div>
+                                )}
+                                <div className="d-flex justify-content-between align-items-center mt-4" style={{ width: '60%' }}>
+                                    <div>Date: _______________</div>
+                                    <div className="text-end">
+                                        <div>Doctor's Signature</div>
+                                        <div>__________________</div>
+                                    </div>
+                                </div>
+                                <div className="mt-4">
+                                    <button className="btn btn-outline-primary me-2" onClick={handlePrint}>🖨 Print</button>
+                                    <button className="btn btn-secondary" onClick={() => navigate('/dashboard')}>Home</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    };
 
 const styles = {
   container: {

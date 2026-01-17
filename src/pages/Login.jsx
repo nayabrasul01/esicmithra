@@ -6,48 +6,59 @@ import { useNavigate } from "react-router-dom";
 const Login = () => {
   const [userId, setUserId] = useState("");
   const [showOtp, setShowOtp] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async () => {
     if (!userId) return alert("Enter User ID");
 
-    await sendOtp(userId);
-    setShowOtp(true);
+    try {
+      setLoading(true);
+      const res = await sendOtp(userId);
+      if(res.data.success){
+        setShowOtp(true);
+      } else {
+        alert(res.data.message);
+      }
+    } catch (error) {
+      return alert("Error sending OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <div className="flex flex-col min-h-screen">
-      <div style={styles.container}>
-      <h2>Login</h2>
-
-      <input
-        placeholder="Enter User ID"
-        value={userId}
-        onChange={(e) => setUserId(e.target.value)}
-      />
-
-      <button onClick={handleLogin}>Login</button>
-
-      {showOtp && (
-        <OtpModal
-          onClose={() => setShowOtp(false)}
-          onSuccess={() => navigate("/dashboard")}
-        />
-      )}
+    return (
+      <div
+        style={{
+          minHeight: "70vh",
+          minWidth: "100vw",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          overflow: "hidden",
+        }}
+      >
+        <div className="card p-4" style={{ width: "350px" }}>
+          <h2 className="mb-3 text-center">Login</h2>
+          <input
+            className="form-control mb-3"
+            placeholder="Enter User ID"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+          />
+          <button className="btn btn-primary w-100 mb-2" onClick={handleLogin} disabled={loading}>
+            {loading ? "Sending OTP. Please wait..." : "Login"}
+          </button>
+          {showOtp && (
+            <OtpModal
+              userId={userId}
+              onClose={() => setShowOtp(false)}
+              onSuccess={() => navigate("/dashboard")}
+            />
+          )}
+        </div>
       </div>
-    </div>
-    
-  );
-};
-
-const styles = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    width: "300px",
-    margin: "100px auto",
-    gap: "10px"
-  }
+    );
 };
 
 export default Login;
