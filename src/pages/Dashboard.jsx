@@ -7,7 +7,7 @@ import { searchByIpNumber } from "../services/authService";
 const Dashboard = () => {
   
   const [userData, setUserData] = useState(null);
-  const userId = JSON.parse(localStorage.getItem("userId"));
+  const userId = localStorage.getItem("userId");
   const [selected, setSelected] = useState(null);
 
   const [list, setList] = useState([]);
@@ -46,20 +46,15 @@ const handleSearch = async () => {
           uHID:res.data.data.uHID
         };
         setList(prevList => [selfMember,...prevList]);
-    } else {
-      setErrorMsg("No records found");
+      }
+      setSearching(false);
+    } catch (err) {
+      alert("Failed to load dashboard. " + err);
+      navigate("/");
+    } finally {
+      setSearching(false);
     }
-  } catch (err) {
-    if (err.response?.status === 503) {
-      setErrorMsg("IP service is temporarily down. Please try later.");
-    } else {
-      setErrorMsg("Unable to fetch IP details");
-    }
-  } finally {
-
-    setSearching(false);
-
-  }
+  } 
 };
 
 
@@ -178,6 +173,7 @@ return (
         </button>
       )}
     </div>
+    
   );
 };
 

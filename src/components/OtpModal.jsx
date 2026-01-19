@@ -48,9 +48,8 @@ const OtpModal = ({ userId, onClose }) => {
       const res = await verifyOtp(userId, finalOtp);
 
       if (res.data.success) {
-        sessionStorage.setItem("session", JSON.stringify(res.data.data));
-        localStorage.setItem("session", JSON.stringify(res.data.data));
-        localStorage.setItem("userId", JSON.stringify(userId));
+        localStorage.setItem("session", res.data.data);
+        localStorage.setItem("userId", userId);
         navigate("/dashboard");
       } else {
         setError(res.data.message);
