@@ -31,7 +31,7 @@ const hasVisited = sessionStorage.getItem('hasVisited');
     <div
       className="footer-area-bottom"
       style={{
-        background: '#093FB4',
+        background: '#742902',
         color: 'white',
         padding: '10px 40px',
         display: 'flex',

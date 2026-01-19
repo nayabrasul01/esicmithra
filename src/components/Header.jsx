@@ -1,64 +1,70 @@
-import React from 'react';
-import logo from './../assets/esic_header_logo.jpg';
-import hospitalLogo from './../assets/hospital.png';
-import indiaGovSymbol from './../assets/India_gov_symbol_header.png';
+import React from "react";
+import logo from "./../assets/esic_header_logo.jpg";
+import indiaGovSymbol from "./../assets/India_gov_symbol_header.png";
+import { MdLocalHospital } from "react-icons/md";
 
 const Header = () => {
   return (
     <div
       id="header"
       style={{
-        background: '#fff',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '5px 15px',
-        borderBottom: '1px solid black',
-        position: 'sticky', // Added to fix to top
-        top: 0, // Stick to top
-        left: 0,
-        width: '100%',
-        zIndex: 1000 // Ensure it stays above other content
+        background: "#fff",
+        position: "sticky",
+        top: 0,
+        zIndex: 1000,
       }}
     >
-      {/* Left Logo */}
-      <a href="https://esic.gov.in/">
-        <img
-          src={logo}
-          alt="MainLogo"
-          style={{ height: '80px', objectFit: 'contain', paddingLeft: '20px' }}
-          title="Home"
-        />
-      </a>
-
-      {/* Center Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-        <img
-          src={hospitalLogo}
-          alt="Hospital Logo"
-          style={{ height: '40px', objectFit: 'contain', marginRight: '10px' }}
-          title="Hospital"
-        />
-        <h3 style={{ margin: 0, fontWeight: 'bold', letterSpacing: '2px' }}>MITRA</h3>
-      </div>
-      
-      {/* Right Logo */}
-      <a
-        href="https://labour.gov.in/"
-        id="a1"
-        target="_blank"
-        rel="noopener noreferrer"
+      {/* ---------- ROW 1 ---------- */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "5px 20px",
+        }}
       >
-        <img
-          src={indiaGovSymbol}
-          alt="India Government Symbol"
-          style={{ height: '80px', objectFit: 'contain', paddingRight: '40px' }}
-          title="Minister of Labour & Employment"
-        />
-      </a>
+        {/* ESIC Logo */}
+        <a href="https://esic.gov.in/">
+          <img
+            src={logo}
+            alt="ESIC Logo"
+            style={{ height: "75px", objectFit: "contain" }}
+          />
+        </a>
+
+        {/* Labour Logo */}
+        <a
+          href="https://labour.gov.in/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            src={indiaGovSymbol}
+            alt="Labour Ministry"
+            style={{ height: "75px", objectFit: "contain" }}
+          />
+        </a>
+      </div>
+
+      {/* ---------- LINE AFTER FIRST ROW ---------- */}
+      <hr style={{ margin: 0, borderTop: "1px solid black" }} />
+
+      {/* ---------- ROW 2 ---------- */}
+      <div className="emitra-title"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "8px 0",
+        }}
+      >
+        <MdLocalHospital className="emitra-icon" />
+        <h3  className="emitra-text"> 
+          <span className="emitra-e">e</span>-MITRA
+        </h3>
+      </div>
     </div>
   );
 };
-
 
 export default Header;

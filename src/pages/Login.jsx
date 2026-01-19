@@ -2,6 +2,7 @@ import { useState } from "react";
 import { sendOtp } from "../services/authService";
 import OtpModal from "../components/OtpModal";
 import { useNavigate } from "react-router-dom";
+import { MdLogin } from "react-icons/md";
 
 const Login = () => {
   const [userId, setUserId] = useState("");
@@ -39,15 +40,30 @@ const Login = () => {
         }}
       >
         <div className="card p-4" style={{ width: "350px" }}>
-          <h2 className="mb-3 text-center">Login</h2>
+          <div className="text-center mb-3">
+  <span
+    style={{
+      background: "#FBFAC2",
+      borderRadius: "50%",
+      padding: "12px",
+      display: "inline-flex",
+    }}
+  >
+    <MdLogin size={32} color="#742902" />
+  </span>
+</div>
+
+
+
+          
           <input
             className="form-control mb-3"
             placeholder="Enter User ID"
             value={userId}
             onChange={(e) => setUserId(e.target.value)}
           />
-          <button className="btn btn-primary w-100 mb-2" onClick={handleLogin} disabled={loading}>
-            {loading ? "Sending OTP. Please wait..." : "Login"}
+          <button className="btn btn-esic mb-2" onClick={handleLogin} disabled={loading}>
+            {loading ? "Sending OTP. Please wait..." : "Send OTP"}
           </button>
           {showOtp && (
             <OtpModal

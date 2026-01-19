@@ -168,8 +168,8 @@ const Treatment = () => {
                                                 <td>{patient.relationship}</td>
                                             </tr>
                                             <tr>
-                                                <th>DOB</th>
-                                                <td>{patient.dob}</td>
+                                                <th>Age/Gender</th>
+                                                <td> {patient.dob && <span>{calculateAge(patient.dob)} yrs/ {patient.sex}</span>}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -291,7 +291,7 @@ const Treatment = () => {
                                     <div className="d-flex justify-content-between">
                                         <button
                                             type="submit"
-                                            className="btn btn-primary"
+                                            className="btn btn-esic"
                                             disabled={
                                                 !form.chiefComplaints ||
                                                 !form.diagnosis ||
@@ -348,7 +348,7 @@ const Treatment = () => {
                                             </tr>
                                             <tr>
                                                 <th>Age/Gender</th>
-                                                <td>{submittedData.patient.dob} {submittedData.patient.dob && <span>({calculateAge(submittedData.patient.dob)} yrs)/ ({submittedData.patient.gender})</span>}</td>
+                                                <td> {submittedData.patient.dob && <span>{calculateAge(submittedData.patient.dob)} yrs/ {submittedData.patient.gender}</span>}</td>
                                             </tr>
                                         </tbody>
                                     </table>

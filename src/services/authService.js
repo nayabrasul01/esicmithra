@@ -56,6 +56,10 @@ export const verifyOtp = async (userId, otp) => {
 export const getDashboardData = (userId) => {
   return API.get(`/dashboard/${userId}`);
 };
+export const searchByIpNumber = (ipNumber) => {
+  return API.post("/dashboard/search", { ipNumber });
+};
+
 
 // export const fetchUserData = () => {
 //   return new Promise((resolve) => {

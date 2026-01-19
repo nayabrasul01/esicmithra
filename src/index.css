@@ -66,3 +66,108 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+.form-control:focus {
+  border-color: #742902 !important;                  
+  box-shadow: 0 0 0 0.25rem rgba(136, 33, 26, 0.25) !important; 
+  outline: none;                                     
+}
+.btn-esic {
+  background-color: #FBFAC2;     
+  border: 1px solid #742902;      
+  color: #742902;                 
+  font-weight: 500;
+}
+
+.btn-esic:hover {
+  background-color: #f3f1b5;      
+  border-color: #5f1f02;
+  color: #5f1f02;
+}
+
+.btn-esic:focus {
+  box-shadow: 0 0 0 0.2rem rgba(116, 41, 2, 0.35);
+}
+
+.btn-esic:disabled,
+.btn-esic.disabled {
+  background-color: #FBFAC2;
+  border-color: #742902;
+  color: #742902;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.emitra-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+.btn-esic-outline {
+  background-color: transparent;
+  border: 1px solid #742902;
+  color: #742902;
+  font-weight: 500;
+}
+
+.btn-esic-outline:hover {
+  background-color: #FBFAC2;   
+  color: #742902;
+  border-color: #5f1f02;
+}
+
+.btn-esic-outline:focus {
+  box-shadow: 0 0 0 0.2rem rgba(116, 41, 2, 0.35);
+}
+
+.btn-esic-outline:disabled,
+.btn-esic-outline.disabled {
+  background-color: transparent;
+  border-color: #742902;
+  color: #742902;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+.emitra-icon {
+  color: #742902;
+  font-size: 36px; 
+}
+
+/* Text */
+.emitra-text {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  font-size: 26px; /* desktop */
+}
+
+.emitra-e {
+  color: #742902;
+  font-weight: 600;
+}
+
+
+@media (max-width: 576px) {
+  .emitra-icon {
+    font-size: 26px;
+  }
+
+  .emitra-text {
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+}
+
+
+@media (min-width: 577px) and (max-width: 991px) {
+  .emitra-icon {
+    font-size: 30px;
+  }
+
+  .emitra-text {
+    font-size: 22px;
+  }
+}
