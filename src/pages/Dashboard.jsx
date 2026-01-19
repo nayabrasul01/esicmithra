@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const [userData, setUserData] = useState(null);
-  const userId = JSON.parse(localStorage.getItem("userId"));
+  const userId = localStorage.getItem("userId");
   const [selected, setSelected] = useState(null);
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +33,8 @@ const Dashboard = () => {
       }
       setLoading(false);
     } catch (err) {
-      alert("Failed to load dashboard");
+      alert("Failed to load dashboard. " + err);
+      navigate("/");
     } finally {
       setLoading(false);
     }
