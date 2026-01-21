@@ -1,19 +1,21 @@
-import { useLocation } from "react-router-dom";
+import { useLocation , useNavigate} from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { FaDownload } from "react-icons/fa6";
+import { showToast } from '../util/toastUtil';
+
 import {
     getDashboardData,
     getHistory,
     saveTreatment,
     uploadFile,
-    downloadFile
+    downloadFile,
+    downloadPrescription
 } from "../services/authService";
 
 const Treatment = () => {
     const { state: patient } = useLocation();
-    const navigate = useNavigate();
     const [prevData, setPrevData] = useState(null);
-    
+    const userId = localStorage.getItem("userId");
     const [form,setForm]=useState({
         chiefComplaints:"",
         diagnosis:"",
@@ -25,6 +27,8 @@ const Treatment = () => {
     const [file, setFile] = useState(null);
     const [submittedData, setSubmittedData] = useState(null);
 
+    const navigate = useNavigate();
+
     useEffect(() => {
         if(patient)
             fetchHistory();
@@ -32,7 +36,6 @@ const Treatment = () => {
 
     const fetchHistory = async ()=>{
         try{
-        console.log(patient);
         const res = await getHistory(patient.uHID);
         if(res.data.success)
             setHistory(res.data.data);
@@ -59,25 +62,37 @@ const Treatment = () => {
             }
         }
         const payload={
+            ipNumber: patient.ipNumber,
             uhid: patient.uHID,
             name: patient.name,
             relationship: patient.relationship,
             gender: patient.sex,
+            age: calculateAge(patient.dob),
             dob: dob,
             state: patient.residingState,
+            doctorUserId: userId,
             ...form
         };
         try {
             const res = await saveTreatment(payload);
             if(res.data.success){
+                payload.treatmentId = res.data.data.id;
+                const response = await downloadPrescription(payload);
+
+                const blob = new Blob([response.data], {
+                    type: "application/pdf"
+                });
+                createFileLink(blob, "prescription.pdf");
+                
                 setSavedId(res.data.data.id);
                 setSubmittedData(res.data.data);
-                alert("Saved successfully");
+                showToast("Data saved successfully", "success")
+                navigate("/dashboard")
             } else {
-                alert(res.data.message || "Failed to save treatment");
+                showToast("Failed to save treatment.\n Reason: " + res.data.message, "danger")
             }
         } catch (error) {
-            alert(error?.response?.data?.message || error.message || "An error occurred while saving treatment");
+            showToast("Failed to save treatment. Reason: " + error?.response?.data?.message || error.message || "An error occurred while saving treatment", "danger")
         }
     };
 
@@ -88,50 +103,46 @@ const Treatment = () => {
     const handleUpload = async(treatmentId,file)=>{
         try{
             const res = await uploadFile(treatmentId,file);
-            alert(res.data.message);
+            showToast(res.data.message, "success");
             fetchHistory(); // refresh table
         }catch(e){
-            alert(e.response.data.message);
+            showToast(e.response.data.message, "danger")
         }
     }
 
-    const download = async(docId)=>{
+    const download = async(docId, fileType)=>{
         try {
-            const response = await downloadFile(docId);
+            const response = await downloadFile(docId, fileType);
             const blob = new Blob(
                 [response.data],
                 { type: response.headers["content-type"] } // 👈 important
             );
 
-            const disposition =
-            response.headers["content-disposition"];
-
-            let filename = "file.pdf";
-
+            const disposition = response.headers["content-disposition"];
+            // Default filename
+            let filename = "downloaded_file.pdf";
             if (disposition && disposition.includes("filename=")) {
-            filename = disposition
-                .split("filename=")[1]
-                .replaceAll('"', "");
+                filename = disposition.split("filename=")[1].replaceAll('"', "").trim();
             }
-
-            const url = window.URL.createObjectURL(blob);
-
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-
-            a.remove();
-            window.URL.revokeObjectURL(url);
-
-        } catch (err) {
-            console.error(err);
-            alert("Download failed");
+            createFileLink(blob, filename);
+            showToast(response.data.message, "success");
+        } catch (error) {
+            showToast(error?.response?.data?.message || error.message || "Download failed", "danger");
         }
     }
 
+    const createFileLink = (blob, filename) => {
+        const url = window.URL.createObjectURL(blob);
 
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    }
 
     if(!patient) return <p>No patient</p>;
     if(loading) return <p>Loading...</p>;
@@ -175,6 +186,29 @@ const Treatment = () => {
                                     </table>
                                 </div>
                             </div>
+
+                            
+                            <div className="d-flex gap-3 justify-content-center mb-3">
+                                <button
+                                    type="submit"
+                                    className="btn btn-esic"
+                                    // disabled={
+                                    //     !form.chiefComplaints ||
+                                    //     !form.diagnosis ||
+                                    //     !form.prescription
+                                    // }
+                                    onClick={handleSubmit}
+                                >
+                                    Submit
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-esic"
+                                    onClick={() => navigate('/dashboard')}
+                                >
+                                    Back
+                                </button>
+                            </div>
                         </div>
 
                         {/* HISTORY TABLE */}
@@ -186,13 +220,14 @@ const Treatment = () => {
                                         <table className="table table-bordered table-hover text-center">
                                             <thead className="table-light">
                                                 <tr>
-                                                    <th colSpan={6}>Previous Treatments</th>
+                                                    <th colSpan={6}>View/Upload Prescription</th>
                                                 </tr>
                                                 <tr>
+                                                    <th>Transaction No.</th>
                                                     <th>Date</th>
-                                                    <th>Complaint</th>
+                                                    {/* <th>Complaint</th>
                                                     <th>Diagnosis</th>
-                                                    <th>Prescription</th>
+                                                    <th>Prescription</th> */}
                                                     <th>Option</th>
                                                     <th>Files</th>
                                                 </tr>
@@ -200,12 +235,28 @@ const Treatment = () => {
                                             <tbody>
                                                 {history.map((h, i) => (
                                                     <tr key={i}>
-                                                        <td>{h.treatment.createdAt ? h.treatment.createdAt.split('T')[0] : ''}</td>
-                                                        <td>{h.treatment.chiefComplaints}</td>
-                                                        <td>{h.treatment.diagnosis}</td>
-                                                        <td>{h.treatment.prescription}</td>
                                                         <td>
-                                                            {h.documents && h.documents.length > 0 ? (
+                                                            {h.documents && h.documents.length > 0 && h.documents[0].id ? (
+                                                                <a
+                                                                    href="#"
+                                                                    onClick={e => {
+                                                                        e.preventDefault();
+                                                                        download(h.documents[0].id, 'prescription');
+                                                                    }}
+                                                                    style={{ cursor: 'pointer', color: '#0d6efd', textDecoration: 'underline' }}
+                                                                >
+                                                                    {h.treatment.id}
+                                                                </a>
+                                                            ) : (
+                                                                h.treatment.id
+                                                            )}
+                                                        </td>
+                                                        <td>{h.treatment.createdAt ? h.treatment.createdAt.split('T')[0] : ''}</td>
+                                                        {/* <td>{h.treatment.chiefComplaints}</td>
+                                                        <td>{h.treatment.diagnosis}</td>
+                                                        <td>{h.treatment.prescription}</td> */}
+                                                        <td>
+                                                            {h.documents && h.documents.length > 0 && h.documents[0].filePath ? (
                                                                 <span className="text-success fw-semibold">
                                                                     Uploaded
                                                                 </span>
@@ -220,16 +271,16 @@ const Treatment = () => {
                                                             )}
                                                         </td>
                                                         <td>
-                                                            {h.documents && h.documents.length > 0 ? (
+                                                            {h.documents && h.documents.length > 0 && h.documents[0].filePath ? (
                                                                 h.documents.map((d, idx) => (
                                                                     <a
                                                                         key={idx}
-                                                                        onClick={() => download(d.id)}
+                                                                        onClick={() => download(d.id, 'other')}
                                                                         target="_blank"
                                                                         className="btn btn-link btn-sm p-0"
                                                                         style={{ textDecoration: 'none', cursor: 'pointer' }}
                                                                     >
-                                                                    <i class="fi fi-rr-download" alt="Uploaded File"></i>
+                                                                    <FaDownload />
                                                                     </a>
                                                                 ))
                                                             ) : (
@@ -245,72 +296,7 @@ const Treatment = () => {
                             </div>
                         )}
 
-                        <div className="card mb-4 shadow">
-                            {/* <div className="card-header text-center">
-                                New Treatment Plan
-                            </div> */}
-                            <div className="card-body">
-                                <h5 className="card-title text-center mb-3">New Treatment Plan</h5>
-                                <form onSubmit={e => { e.preventDefault(); handleSubmit(); }}>
-                                    <div className="mb-3">
-                                        {/* <label htmlFor="chiefComplaints" className="form-label">Chief Complaints</label> */}
-                                        <textarea
-                                            className="form-control"
-                                            id="chiefComplaints"
-                                            name="chiefComplaints"
-                                            placeholder="Chief Complaints"
-                                            rows="3"
-                                            value={form.chiefComplaints}
-                                            onChange={handleChange}
-                                        />
-                                    </div>
-                                    <div className="mb-3">
-                                        {/* <label htmlFor="diagnosis" className="form-label">Diagnosis</label> */}
-                                        <textarea
-                                            className="form-control"
-                                            id="diagnosis"
-                                            name="diagnosis"
-                                            placeholder="Diagnosis"
-                                            rows="3"
-                                            value={form.diagnosis}
-                                            onChange={handleChange}
-                                        />
-                                    </div>
-                                    <div className="mb-3">
-                                        {/* <label htmlFor="prescription" className="form-label">Prescription</label> */}
-                                        <textarea
-                                            className="form-control"
-                                            id="prescription"
-                                            name="prescription"
-                                            placeholder="Prescription"
-                                            rows="3"
-                                            value={form.prescription}
-                                            onChange={handleChange}
-                                        />
-                                    </div>
-                                    <div className="d-flex justify-content-between">
-                                        <button
-                                            type="submit"
-                                            className="btn btn-esic"
-                                            disabled={
-                                                !form.chiefComplaints ||
-                                                !form.diagnosis ||
-                                                !form.prescription
-                                            }
-                                        >
-                                            Submit
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-secondary ms-2"
-                                            onClick={() => navigate('/dashboard')}
-                                        >
-                                            Back
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
+                        {/* Treatment Table */}
                     </div>
                 </div>
             </div>

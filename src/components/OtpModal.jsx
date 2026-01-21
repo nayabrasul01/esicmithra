@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { verifyOtp } from "../services/authService";
 import { useNavigate } from "react-router-dom";
+import { showToast } from '../util/toastUtil';
 
 const OtpModal = ({ userId, onClose }) => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -50,6 +51,7 @@ const OtpModal = ({ userId, onClose }) => {
       if (res.data.success) {
         localStorage.setItem("session", res.data.data);
         localStorage.setItem("userId", userId);
+        showToast("Logged In Succesfully.", "success")
         navigate("/dashboard");
       } else {
         setError(res.data.message);

@@ -60,7 +60,7 @@ const Header = () => {
       >
         <MdLocalHospital className="emitra-icon" />
         <h3  className="emitra-text"> 
-          <span className="emitra-e">e</span>-MITRA
+          <span className="emitra-e">CHC-PHC</span>
         </h3>
       </div>
     </div>

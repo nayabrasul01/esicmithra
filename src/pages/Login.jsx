@@ -3,6 +3,7 @@ import { sendOtp } from "../services/authService";
 import OtpModal from "../components/OtpModal";
 import { useNavigate } from "react-router-dom";
 import { MdLogin } from "react-icons/md";
+import { showToast } from '../util/toastUtil';
 
 const Login = () => {
   const [userId, setUserId] = useState("");
@@ -11,7 +12,7 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleLogin = async () => {
-    if (!userId) return alert("Enter User ID");
+    if (!userId) return showToast("Enter User ID", "warning");
 
     try {
       setLoading(true);
@@ -19,10 +20,10 @@ const Login = () => {
       if(res.data.success){
         setShowOtp(true);
       } else {
-        alert(res.data.message);
+        showToast(res.data.message, "warning");
       }
     } catch (error) {
-      return alert("Error sending OTP. Please try again.");
+      return showToast("Error sending OTP. Please try again.", "danger");
     } finally {
       setLoading(false);
     }
@@ -41,21 +42,17 @@ const Login = () => {
       >
         <div className="card p-4" style={{ width: "350px" }}>
           <div className="text-center mb-3">
-  <span
-    style={{
-      background: "#FBFAC2",
-      borderRadius: "50%",
-      padding: "12px",
-      display: "inline-flex",
-    }}
-  >
-    <MdLogin size={32} color="#742902" />
-  </span>
-</div>
-
-
-
-          
+            <span
+                style={{
+                  background: "#FBFAC2",
+                  borderRadius: "50%",
+                  padding: "12px",
+                  display: "inline-flex",
+                }}
+              >
+              <MdLogin size={32} color="#742902" />
+            </span>
+          </div>
           <input
             className="form-control mb-3"
             placeholder="Enter User ID"

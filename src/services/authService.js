@@ -1,8 +1,9 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:8080/api",
+  // baseURL: "http://localhost:8080/api",
   // baseURL: "http://10.10.13.233:9092/api",
+  baseURL: "/api",
 });
 
 API.interceptors.request.use((config) => {
@@ -65,8 +66,10 @@ export const verifyOtp = async (userId, otp) => {
 export const getDashboardData = (userId) => {
   return API.get(`/dashboard/${userId}`);
 };
+
+
 export const searchByIpNumber = (ipNumber) => {
-  return API.post("/dashboard/search", { ipNumber });
+  return API.get(`/dashboard/search/${ipNumber}`);
 };
 
 
@@ -137,10 +140,17 @@ export const uploadFile = (treatmentId, file) => {
   );
 };
 
-export const downloadFile = (docId) =>
-  API.get(`/treatment/download/${docId}`,
+export const downloadFile = (docId, fileType) =>
+  API.get(`/treatment/download/?docId=${docId}&fileType=${fileType}`,
     {
         responseType: "blob"   // 🔥 IMPORTANT
       }
+  );
+
+export const downloadPrescription = (payload) => 
+  API.post(
+    `/treatment/generate-pdf`,
+      payload,
+    { responseType: "blob" }
   );
 
