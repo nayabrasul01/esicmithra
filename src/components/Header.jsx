@@ -1,9 +1,27 @@
 import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import logo from "./../assets/esic_header_logo.jpg";
 import indiaGovSymbol from "./../assets/India_gov_symbol_header.png";
 import { MdLocalHospital } from "react-icons/md";
+import { TbLogout2 } from "react-icons/tb";
+import { showToast } from "../util/toastUtil";
 
 const Header = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const hideLogout =
+  location.pathname === "/login" || location.pathname === "/";
+
+
+  const logout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+
+    showToast("Logged out successfully.", "info");
+    navigate("/");
+  };
+
   return (
     <div
       id="header"
@@ -50,19 +68,43 @@ const Header = () => {
       <hr style={{ margin: 0, borderTop: "1px solid black" }} />
 
       {/* ---------- ROW 2 ---------- */}
-      <div className="emitra-title"
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "8px 0",
-        }}
-      >
-        <MdLocalHospital className="emitra-icon" />
-        <h3  className="emitra-text"> 
-          <span className="emitra-e">CHC-PHC</span>
-        </h3>
-      </div>
+      
+        <div
+          className="emitra-title"
+          style={{
+            position: "relative",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "8px 0",
+          }}
+        >
+          {/* Center Title */}
+          <MdLocalHospital className="emitra-icon" />
+          <h3 className="emitra-text">
+            <span className="emitra-e">CHC-PHC</span>
+          </h3>
+
+          {/* Right Logout Button */}
+          {!hideLogout && (
+            <button
+              className="btn btn-danger btn-esic position-absolute"
+              style={{
+                position: "absolute",
+                right: "15px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                fontSize: "14px",
+              }}
+              onClick={logout}
+              aria-label="Logout"
+            >
+            Logout <TbLogout2 />
+            </button>
+          )}
+        </div>
+
+
     </div>
   );
 };

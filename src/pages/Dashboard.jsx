@@ -62,13 +62,7 @@ const handleSearch = async () => {
       setSearching(false);
     }
   }
-
-  const logout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    navigate("/");
-  };
-
+  
   const goNext = () => {
     selected.ipNumber = ipNumber;
     navigate("/treatment", { state: selected });
@@ -79,18 +73,14 @@ return (
 
       <div className="position-relative mb-3">
         <h3>Insured Person(IP) Details</h3>
-        <button
+        {/* <button
           className="btn btn-danger position-absolute"
           style={{ top: 0, right: 0 }}
           onClick={logout}
           aria-label="Logout"
         >
-          {/* Logout SVG icon */}
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M6 2a2 2 0 0 0-2 2v2a.5.5 0 0 0 1 0V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-2a.5.5 0 0 0-1 0v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6z"/>
-            <path d="M.146 8.354a.5.5 0 0 1 0-.708l2-2a.5.5 0 1 1 .708.708L1.707 7.5H9.5a.5.5 0 0 1 0 1H1.707l1.147 1.146a.5.5 0 0 1-.708.708l-2-2z"/>
-          </svg>
-        </button>
+          <TbLogout2 />
+        </button> */}
       </div>
       <div className="row mb-3 align-items-end">
         <div className="col-md-4 col-sm-12 mb-2">
@@ -108,14 +98,24 @@ return (
 
     </div>
 
-    <div className="col-md-2 col-sm-12 mb-2">
+    <div className="d-flex col-md-2 col-sm-12 mb-2">
       <button
-        className="btn btn-esic w-100"
+        className="btn btn-esic w-100 mx-3"
         onClick={handleSearch}
         disabled={searching || ipNumber.length !== 10}
       >
         {searching ? "Searching..." : "Search"}
       </button>
+
+      <button
+        className="btn btn-esic w-100"
+        onClick={() => {
+          navigate("/home")
+        }}
+      >
+        Back
+      </button>
+
         </div>
       </div>
       

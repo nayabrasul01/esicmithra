@@ -1,9 +1,9 @@
 import { useState, useRef } from "react";
-import { verifyOtp } from "../services/authService";
+import { verifyOtp, validateOtp } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { showToast } from '../util/toastUtil';
 
-const OtpModal = ({ userId, onClose }) => {
+const OtpModal = ({ userId, otpData, onClose }) => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -29,7 +29,7 @@ const OtpModal = ({ userId, onClose }) => {
   };
 
   const handlePaste = (e) => {
-    const pasted = e.clipboardData.getData("text").slice(0, 6);
+    const pasted = e.clipboardData.getData("text").slice(0, 4);
     if (!/^\d+$/.test(pasted)) return;
 
     const newOtp = pasted.split("");
@@ -41,18 +41,27 @@ const OtpModal = ({ userId, onClose }) => {
   const handleVerify = async () => {
     const finalOtp = otp.join("");
     if (finalOtp.length !== 6) {
-      return setError("Please enter 6-digit OTP");
+      return setError("Please enter 4-digit OTP");
     }
 
     try {
       setLoading(true);
       const res = await verifyOtp(userId, finalOtp);
+      // const payload = {
+      //   Username: userId,
+      //   OTP: finalOtp,
+      //   uname: otpData.ResultParameters[0].UserName,
+      //   sessionId: otpData.ResultParameters[0].SessionID,
+      //   tokenId: otpData.TokenID
+      // };
+      // const res = await validateOtp(payload);
 
       if (res.data.success) {
-        localStorage.setItem("session", res.data.data);
-        localStorage.setItem("userId", userId);
+        localStorage.setItem("session", res.data.data.sessionId);
+        localStorage.setItem("user", JSON.stringify(res.data.data.user));
         showToast("Logged In Succesfully.", "success")
-        navigate("/dashboard");
+        
+        navigate("/home");
       } else {
         setError(res.data.message);
       }

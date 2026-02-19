@@ -1,9 +1,9 @@
 import axios from "axios";
 
 const API = axios.create({
-  // baseURL: "http://localhost:8080/api",
+  baseURL: "http://localhost:8080/api",
   // baseURL: "http://10.10.13.233:9092/api",
-  baseURL: "/api",
+  // baseURL: "/api",
 });
 
 API.interceptors.request.use((config) => {
@@ -16,6 +16,10 @@ API.interceptors.request.use((config) => {
 
 export const sendOtp = async (userId) => {
   return API.post("/auth/send-otp?userId=" + userId);
+};
+
+export const authenticate = async (userId, password) => {
+  return API.post("/auth/authenticate?username=" + userId + "&password=" + password);
 };
 
 // export const sendOtp = (userId) => {
@@ -51,7 +55,11 @@ export const verifyOtp = async (userId, otp) => {
   return API.post("/auth/verify-otp?userId=" + userId + "&otp=" + otp);
 };
 
+export const validateOtp = (payload) => {
+  return API.post("/auth/validate-otp", payload);
+};
 
+  
 // export const createSession = () => {
 //   return new Promise((resolve) => {
 //     setTimeout(() => {

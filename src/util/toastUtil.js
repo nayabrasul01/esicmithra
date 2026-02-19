@@ -90,6 +90,7 @@ function getBootstrapColor(type) {
     case "warning":
       return "warning";
     case "info":
+      return "bg-light";
     default:
       return "info";
   }

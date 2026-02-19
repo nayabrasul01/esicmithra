@@ -69,9 +69,10 @@ const Treatment = () => {
             gender: patient.sex,
             age: calculateAge(patient.dob),
             dob: dob,
-            state: patient.residingState,
-            doctorUserId: userId,
-            ...form
+            state: patient.residingState
+            // doctorUserId: userId,
+            // ...form
+            // clinicalData: {...form}
         };
         try {
             const res = await saveTreatment(payload);
