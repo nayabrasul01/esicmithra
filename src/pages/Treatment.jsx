@@ -2,6 +2,7 @@ import { useLocation , useNavigate} from "react-router-dom";
 import { useEffect, useState } from "react";
 import { FaDownload } from "react-icons/fa6";
 import { showToast } from '../util/toastUtil';
+import { MdErrorOutline } from "react-icons/md";
 
 import {
     getDashboardData,
@@ -15,7 +16,7 @@ import {
 const Treatment = () => {
     const { state: patient } = useLocation();
     const [prevData, setPrevData] = useState(null);
-    const userId = localStorage.getItem("userId");
+    const user = JSON.parse(localStorage.getItem("user"));
     const [form,setForm]=useState({
         chiefComplaints:"",
         diagnosis:"",
@@ -36,13 +37,15 @@ const Treatment = () => {
 
     const fetchHistory = async ()=>{
         try{
-        const res = await getHistory(patient.uHID);
-        if(res.data.success)
-            setHistory(res.data.data);
-        }
-        finally{
-            setLoading(false);
-        }
+            if(!patient.uHID) return;
+            const res = await getHistory(patient.uHID);
+            
+            if(res.data.success)
+                setHistory(res.data.data);
+            }
+            finally{
+                setLoading(false);
+            }
     };
 
     const handleChange = e =>{
@@ -53,6 +56,12 @@ const Treatment = () => {
     };
 
     const handleSubmit = async ()=>{
+        
+        if(!patient.uHID){
+            showToast("No UHID found for the dependent. please create uHID first and then try again.", "warning");
+            return;
+        }
+
         // Format dob to dd-mm-yyyy
         let dob = patient.dob;
         if (dob && typeof dob === 'string') {
@@ -69,7 +78,8 @@ const Treatment = () => {
             gender: patient.sex,
             age: calculateAge(patient.dob),
             dob: dob,
-            state: patient.residingState
+            state: patient.residingState,
+            locationID: user.locationId
             // doctorUserId: userId,
             // ...form
             // clinicalData: {...form}
@@ -126,7 +136,7 @@ const Treatment = () => {
                 filename = disposition.split("filename=")[1].replaceAll('"', "").trim();
             }
             createFileLink(blob, filename);
-            showToast(response.data.message, "success");
+            showToast("File downloaded successfully", "success");
         } catch (error) {
             showToast(error?.response?.data?.message || error.message || "Download failed", "danger");
         }
@@ -152,7 +162,7 @@ const Treatment = () => {
      return !savedId ?
     /* ---------- FORM VIEW ---------- */
         (
-            <div className="container py-4" style={{ maxWidth: '90%' }}>
+            <div className="container py-4 font-esic" style={{ maxWidth: '90%' }}>
                 <div className="row justify-content-center">
                     <div className="col-md-8">
                         <div className="card mb-4 shadow">
@@ -173,7 +183,12 @@ const Treatment = () => {
                                             </tr>
                                             <tr>
                                                 <th>UHID</th>
-                                                <td>{patient.uHID}</td>
+                                                <td>{patient.uHID ? patient.uHID : (
+                                                    <span>
+                                                        <MdErrorOutline /> No UHID found for the dependent.
+                                                        &nbsp;&nbsp; <button className="btn btn-sm btn-esic" disabled={true}> Create UHID</button>
+                                                    </span>
+                                                )}</td>
                                             </tr>
                                             <tr>
                                                 <th>Relation</th>
@@ -213,10 +228,11 @@ const Treatment = () => {
                         </div>
 
                         {/* HISTORY TABLE */}
-                        {history.length > 0 && (
+                        
                             <div className="card mb-4 shadow">
                                 <div className="card-body">
                                     {/* <h5 className="card-title mb-3">Previous Treatments</h5> */}
+                                { history.length > 0 ? (
                                     <div className="table-responsive">
                                         <table className="table table-bordered table-hover text-center">
                                             <thead className="table-light">
@@ -292,10 +308,11 @@ const Treatment = () => {
                                                 ))}
                                             </tbody>
                                         </table>
-                                    </div>
+                                    </div>)
+                                   : "No previous history found for the selected IP." }
                                 </div>
                             </div>
-                        )}
+                        
 
                         {/* Treatment Table */}
                     </div>

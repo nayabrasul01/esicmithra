@@ -62,14 +62,14 @@ const handleSearch = async () => {
       setSearching(false);
     }
   }
-  
+
   const goNext = () => {
     selected.ipNumber = ipNumber;
     navigate("/treatment", { state: selected });
   };
 
 return (
-    <div className="container mt-2 py-5">
+    <div className="container mt-2 py-5 font-esic">
 
       <div className="position-relative mb-3">
         <h3>Insured Person(IP) Details</h3>
@@ -144,8 +144,8 @@ return (
       {/*Table (only after data is loaded) */}
       {!searching && list.length > 0 && (
         <>
-            <div className="table-responsive shadow">
-              <table className="table table-hover align-middle table-striped">
+            <div className="table-responsive">
+              <table className="table table-hover align-middle table-striped border">
                 <thead className="table-light">
                   <tr>
                     <th colSpan="6" style={{ textAlign: "center" }}>

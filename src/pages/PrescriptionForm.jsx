@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { showToast } from "../util/toastUtil";
 import { fetchLabTests, fetchEdlDrugs, savePrescription, getTreatmentDetails } from "../services/treatmentService";
-import { uploadFile } from "../services/authService";
+import { uploadFile, getHistory } from "../services/authService";
 import { MdCancel } from "react-icons/md";
 import { FaHistory } from "react-icons/fa";
-
+import PatientHistoryModal from "../components/PatientHistoryModal"
 
 
 const PrescriptionForm = () => {
@@ -21,6 +21,7 @@ const PrescriptionForm = () => {
     pulseRate: "",
     examFindings: "",
     diagnosis: "",
+    remarks:""
   });
 
   const [labTests, setLabTests] = useState([]);
@@ -34,13 +35,19 @@ const PrescriptionForm = () => {
   const [saving, setSaving] = React.useState(false);
   const [savedData, setSavedData] = React.useState(null);
 
+  const [showHistoryModal, setShowHistoryModal] = React.useState(false);
+  const [historyData, setHistoryData] = React.useState([]);
+  const [expandedId, setExpandedId] = React.useState(null);
+  const [historyLoading, setHistoryLoading] = React.useState(false);
+
+
   const canSubmit =
     (!!patient &&
     (clinical.symptoms || "").trim().length > 0 &&
     (clinical.examFindings || "").trim().length > 0 &&
     (clinical.bp || "").trim().length > 0 &&
     (clinical.pulseRate || "").trim().length > 0 &&
-    (clinical.diagnosis || "").trim().length > 0) || file !== null;
+    (clinical.diagnosis || "").trim().length > 0) || (file !== null && clinical.remarks.trim().length > 0);
 
   const fileInputRef = React.useRef(null);
 
@@ -57,19 +64,19 @@ const PrescriptionForm = () => {
     loadMasterData();
   }, []);
 
-const loadMasterData = async () => {
-  try {
-    const [labRes, drugRes] = await Promise.all([
-      fetchLabTests(),
-      fetchEdlDrugs(),
-    ]);
+  const loadMasterData = async () => {
+    try {
+      const [labRes, drugRes] = await Promise.all([
+        fetchLabTests(),
+        fetchEdlDrugs(),
+      ]);
 
-    if (labRes?.success) setLabTests(labRes.data || []);
-    if (drugRes?.success) setEdlDrugs(drugRes.data || []);
-  } catch (err) {
-    console.error("Error loading master data", err);
-  }
-};
+      if (labRes?.success) setLabTests(labRes.data || []);
+      if (drugRes?.success) setEdlDrugs(drugRes.data || []);
+    } catch (err) {
+      console.error("Error loading master data", err);
+    }
+  };
 
   // If user directly hits URL without selecting patient
   if (!patient) {
@@ -129,6 +136,7 @@ const loadMasterData = async () => {
         pulse: clinical.pulseRate,
         examinationFindings: clinical.examFindings,
         diagnosis: clinical.diagnosis,
+        remarks: clinical.remarks
       },
 
       labTests: selectedLabTests,
@@ -157,7 +165,26 @@ const loadMasterData = async () => {
       }
   }
 
+  const fetchPatientHistory = async () => {
+    if (!patient?.uhid) return;
+
+    try {
+      setHistoryLoading(true);
+      const response = await getHistory(patient.uhid);
+      if (response.data.success) {
+        setHistoryData(response.data.data);
+        setShowHistoryModal(true);
+      }
+    } catch (error) {
+      console.error("Error fetching history:", error);
+      showToast("Error fetching history:" + error, "danger")
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   return (
+    <>
     <div style={{ minHeight: "100vh", background: "#ffffff" }}>
       <div className="container py-4" style={{ maxWidth: "1000px" }}>
         {/* Patient Information */}
@@ -193,7 +220,9 @@ const loadMasterData = async () => {
                 <div className="text-muted">Patient History</div>
                 <div className="fw-semibold">
                   <button
-                  className="btn btn-sm btn-esic">
+                    className="btn btn-sm btn-esic"
+                    onClick={fetchPatientHistory}
+                  >
                     <FaHistory />
                   </button>
                 </div>
@@ -213,7 +242,7 @@ const loadMasterData = async () => {
               <h5 className="fw-bold mb-3">Clinical Details</h5>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold">Symptoms</label>
+                <label className="form-label fw-semibold"><span style={{color: "red"}}>* </span>Symptoms</label>
                 <textarea
                   className="form-control"
                   rows={3}
@@ -228,7 +257,7 @@ const loadMasterData = async () => {
               <div className="row g-3 mb-3">
                 <div className="col-md-6">
                   <label className="form-label fw-semibold">
-                    Blood Pressure (BP)
+                   <span style={{color: "red"}}>* </span>Blood Pressure (BP)
                   </label>
                   <input
                     className="form-control"
@@ -241,7 +270,7 @@ const loadMasterData = async () => {
                 </div>
 
                 <div className="col-md-6">
-                  <label className="form-label fw-semibold">Pulse Rate</label>
+                  <label className="form-label fw-semibold"><span style={{color: "red"}}>* </span>Pulse Rate</label>
                   <input
                     className="form-control"
                     name="pulseRate"
@@ -255,7 +284,7 @@ const loadMasterData = async () => {
 
               <div className="mb-3">
                 <label className="form-label fw-semibold">
-                  Examination Findings
+                  <span style={{color: "red"}}>* </span>Examination Findings
                 </label>
                 <textarea
                   className="form-control"
@@ -269,7 +298,7 @@ const loadMasterData = async () => {
               </div>
 
               <div>
-                <label className="form-label fw-semibold">Diagnosis</label>
+                <label className="form-label fw-semibold"><span style={{color: "red"}}>* </span>Diagnosis</label>
                 <textarea
                   className="form-control"
                   rows={3}
@@ -360,6 +389,23 @@ const loadMasterData = async () => {
             )}
           </div>
 
+          <div className="mt-3">
+            <label className="form-label fw-semibold">
+            <span style={{color: "red"}}>* </span>  
+              Remarks
+            </label>
+            <textarea
+              className="form-control"
+              rows={2}
+              name="remarks"
+              value={clinical.remarks}
+              onChange={handleClinicalChange}
+              disabled={!file}
+              placeholder="Note: Remarks is mandatory when uploading prescription file."
+              style={{ fontSize: "14px" }}
+            />
+          </div>
+
           {/* Actions */}
           <div className="d-flex gap-2 mb-4 mt-4">
             <button type="button" 
@@ -381,6 +427,15 @@ const loadMasterData = async () => {
         </form>
       </div>
     </div>
+
+   <PatientHistoryModal
+      show={showHistoryModal}
+      onClose={() => setShowHistoryModal(false)}
+      patient={patient}
+      historyData={historyData}
+      loading={historyLoading}
+    />
+    </>
   );
 };
 
@@ -415,7 +470,11 @@ const MultiSelectSearch = ({
 
   return (
     <div className="mb-4">
-      <h5 className="fw-bold mb-3">{label}</h5>
+      {/* <h5 className="fw-bold mb-3"><span style={{color: "red"}}>* </span>{label}</h5> */}
+      <label className="form-label fw-semibold">
+        <span style={{color: "red"}}>* </span>  
+          {label}
+      </label>
 
       {/* Search input */}
       <div className="position-relative">
