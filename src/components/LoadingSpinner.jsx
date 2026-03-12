@@ -3,7 +3,7 @@
 const LoadingSpinner = ({ message }) => {
   return (
     <div className="d-flex justify-content-center align-items-center py-4" >
-      <div className="spinner-border text-primary me-2" role="status">
+      <div className="spinner-border me-2 text-esic" role="status">
         <span className="visually-hidden">Loading...</span>
       </div>
       <span className="ms-2">{message}</span>

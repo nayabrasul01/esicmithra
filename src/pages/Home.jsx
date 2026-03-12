@@ -45,9 +45,9 @@ export default function DashboardHome() {
               className="btn btn-primary btn-esic w-100 py-2 fw-semibold rounded-3"
               onClick={() => {
                 if(userType === 'D')
-                    navigate("/ip-list")
+                    navigate("/ip-list");
                 else if(userType === 'M')
-                    navigate("/dashboard")
+                    navigate("/dashboard");
               }}
             >
               <i className="fi fi-rr-document me-2"></i>

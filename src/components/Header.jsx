@@ -5,10 +5,12 @@ import indiaGovSymbol from "./../assets/India_gov_symbol_header.png";
 import { MdLocalHospital } from "react-icons/md";
 import { TbLogout2 } from "react-icons/tb";
 import { showToast } from "../util/toastUtil";
+import LoadingSpinner from "./LoadingSpinner"
 
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [loading, setLoading] = React.useState(false);
 
   const hideLogout =
   location.pathname === "/login" || location.pathname === "/";
@@ -17,9 +19,13 @@ const Header = () => {
   const logout = () => {
     localStorage.clear();
     sessionStorage.clear();
-
-    showToast("Logged out successfully.", "info");
-    navigate("/");
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      showToast("Logged out successfully.", "info");
+      navigate("/");
+    }, 1000);
+    
   };
 
   return (
@@ -99,7 +105,7 @@ const Header = () => {
               onClick={logout}
               aria-label="Logout"
             >
-            Logout <TbLogout2 />
+            {loading ? <div className="spinner-border spinner-border-sm" role="status"></div> : ""} Logout <TbLogout2 />
             </button>
           )}
         </div>

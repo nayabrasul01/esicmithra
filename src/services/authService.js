@@ -49,7 +49,7 @@ export const downloadFile = (docId, fileType) =>
       }
   );
 
-export const downloadPrescription = (payload) => 
+export const generatePrescription = (payload) => 
   API.post(
     `/treatment/generate-pdf`,
       payload,

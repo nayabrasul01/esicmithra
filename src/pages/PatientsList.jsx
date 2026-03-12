@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { fetchPatients } from "./../services/treatmentService";
 import { showToast } from "../util/toastUtil";
 
@@ -25,7 +25,7 @@ export default function PatientsList() {
         alert(response.message || "Failed to fetch patients");
       }
     } catch (err) {
-        console.error("Patients fetch failed:", err);
+        // console.error("Patients fetch failed:", err);
         showToast("Something went wrong while fetching patients", "danger")
     } finally {
       setLoading(false);

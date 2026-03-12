@@ -48,6 +48,7 @@ const handleSearch = async () => {
         dob: res.data.data.personalDetails[0].dateOfBirth,
         sex: res.data.data.personalDetails[0].sex,
         residingState: res.data.data.AddressDetails[0].address1,
+        marstatus: res.data.data.personalDetails[0].maritalStatus,
         uHID:res.data.data.uHID
       };
         setList(prevList => [selfMember,...prevList]);
@@ -155,6 +156,7 @@ return (
                   <tr>
                     <th>Select</th>
                     <th>Name</th>
+                    <th>UHID</th>
                     <th>Relationship</th>
                     <th>Age</th>
                     <th>Gender</th>
@@ -172,6 +174,7 @@ return (
                         />
                       </td>
                       <td>{m.name}</td>
+                      <td>{m.uHID}</td>
                       <td>{m.relationship}</td>
                       <td>{calculateAge(m.dob)}</td>
                       <td>{m.sex}</td>
