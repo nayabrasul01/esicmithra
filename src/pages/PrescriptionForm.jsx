@@ -6,6 +6,9 @@ import { uploadFile, getHistory } from "../services/authService";
 import { MdCancel } from "react-icons/md";
 import { FaHistory } from "react-icons/fa";
 import PatientHistoryModal from "../components/PatientHistoryModal"
+import { createLogger } from "../util/logger";
+
+const logger = createLogger("PrescriptionController");
 
 
 const PrescriptionForm = () => {
@@ -66,15 +69,30 @@ const PrescriptionForm = () => {
 
   const loadMasterData = async () => {
     try {
+      logger.info("Loading master data for prescription form");
       const [labRes, drugRes] = await Promise.all([
         fetchLabTests(),
         fetchEdlDrugs(),
       ]);
 
-      if (labRes?.success) setLabTests(labRes.data || []);
-      if (drugRes?.success) setEdlDrugs(drugRes.data || []);
+      if (labRes?.success) {
+        setLabTests(labRes.data || []);
+        logger.info("Lab tests master loaded", {
+          total: labRes.data?.length ?? 0,
+        });
+      } else {
+        logger.warn("Lab tests response unsuccessful");
+      }
+      if (drugRes?.success) {
+        setEdlDrugs(drugRes.data || []);
+        logger.info("Drug master loaded", {
+          total: drugRes.data?.length ?? 0,
+        });
+      } else {
+        logger.warn("Drug master response unsuccessful");
+      }
     } catch (err) {
-      console.error("Error loading master data", err);
+      logger.error("Error loading master data", err);
     }
   };
 
@@ -101,22 +119,42 @@ const PrescriptionForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    logger.info("Submitting prescription", {
+      patientId: patient?.id,
+      uhid: patient?.uhid,
+      hasDocument: Boolean(file),
+    });
     try {
       if(file){
         setSaving(true);
+        logger.info("Fetching treatment details before upload", {
+          patientId: patient.id,
+        });
         const response = await getTreatmentDetails(patient.id);
-        if(response.success)
+        if(response.success) {
+          logger.info("Uploading supporting document", {
+            treatmentId: response.data.id,
+          });
           await handleUpload(response.data.id, file);
-        else{
+        } else {
+          logger.warn("Treatment record not found for upload", {
+            patientId: patient.id,
+          });
           setSaving(false);
           showToast("Prescription not saved as there is no treatment record created earlier. Please create prescription and try again.", "warning");
         }
       } 
     }catch (error) {
       setSaving(false);
+      logger.error("Document upload failed before submission", error, {
+        patientId: patient?.id,
+      });
       showToast("Error uploading file: " + error.message, "error");
     }finally{
       navigate("/ip-list");
+      logger.debug("Navigated to IP list after upload attempt", {
+        patientId: patient?.id,
+      });
     }
     // Payload ready for backend
     const payload = {
@@ -142,16 +180,35 @@ const PrescriptionForm = () => {
       labTests: selectedLabTests,
       edlDrugs: selectedDrugs,
     };
+    logger.debug("Prescription payload prepared", {
+      patientId: payload.patientId,
+      labTests: selectedLabTests.length,
+      drugs: selectedDrugs.length,
+    });
 
     try {
+      logger.info("Calling savePrescription API", {
+        patientId: payload.patientId,
+      });
       const response = await savePrescription(payload);
       if(response.data.success){
         setSaving(false);
         showToast("Prescription saved successfully!", "success");
         navigate("/ip-list");
+        logger.info("Prescription save succeeded", {
+          patientId: payload.patientId,
+        });
+      } else {
+        logger.warn("Prescription save response unsuccessful", {
+          patientId: payload.patientId,
+          message: response.data.message,
+        });
       }
     } catch (error) {
       setSaving(false);
+      logger.error("Prescription save failed", error, {
+        patientId: payload.patientId,
+      });
       showToast("Error saving prescription." + error, "error");
     }
   };
@@ -160,7 +217,14 @@ const PrescriptionForm = () => {
       try{
           const res = await uploadFile(treatmentId,file);
           showToast(res.data.message, "success");
+          logger.info("Upload completed", {
+            treatmentId,
+            fileName: file?.name,
+          });
       }catch(e){
+          logger.error("Upload failed inside helper", e, {
+            treatmentId,
+          });
           showToast(e.response.data.message, "danger")
       }
   }
@@ -170,13 +234,18 @@ const PrescriptionForm = () => {
 
     try {
       setHistoryLoading(true);
+      logger.info("Fetching patient history", { uhid: patient.uhid });
       const response = await getHistory(patient.uhid);
       if (response.data.success) {
         setHistoryData(response.data.data);
         setShowHistoryModal(true);
+        logger.info("Patient history fetched", {
+          uhid: patient.uhid,
+          records: response.data.data?.length ?? 0,
+        });
       }
     } catch (error) {
-      console.error("Error fetching history:", error);
+      logger.error("Error fetching history", error, { uhid: patient.uhid });
       showToast("Error fetching history:" + error, "danger")
     } finally {
       setHistoryLoading(false);

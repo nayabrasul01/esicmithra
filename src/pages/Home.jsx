@@ -6,9 +6,11 @@ import { IoDocumentText } from "react-icons/io5";
 export default function DashboardHome() {
   const navigate = useNavigate();
   const [userType, setUserType] = useState([]);
+  const [user, setUser] = useState([]);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
+    setUser(user);
     if(user?.type)
         setUserType(user.type);
     else
@@ -81,8 +83,8 @@ export default function DashboardHome() {
 
             <button
               className="btn btn-success btn-esic w-100 py-2 fw-semibold rounded-3"
-              onClick={() => navigate("/draft-referral")}
-              disabled={true}
+              onClick={() => navigate("/referral", { state: user })}
+              // disabled={true}
             >
               <i className="fi fi-rr-list-check me-2"></i>
               Create Draft

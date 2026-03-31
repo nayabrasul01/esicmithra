@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { fetchPatients } from "./../services/treatmentService";
 import { showToast } from "../util/toastUtil";
+import { createLogger } from "../util/logger";
+
+const logger = createLogger("PatientsController");
 
 export default function PatientsList() {
   const navigate = useNavigate();
@@ -17,15 +20,23 @@ export default function PatientsList() {
   const loadPatients = async () => {
     try {
       setLoading(true);
+      logger.info("Loading registered patients");
 
       const response = await fetchPatients();
       if (response.data.success) {
         setPatients(response.data.data || []);
+        logger.info("Patients loaded", {
+          total: response.data.data?.length ?? 0,
+        });
       } else {
         alert(response.message || "Failed to fetch patients");
+        logger.warn("Patients endpoint returned failure", {
+          message: response.message,
+        });
       }
     } catch (err) {
         // console.error("Patients fetch failed:", err);
+        logger.error("Patients fetch failed", err);
         showToast("Something went wrong while fetching patients", "danger")
     } finally {
       setLoading(false);
@@ -46,6 +57,10 @@ export default function PatientsList() {
   }, [patients, search]);
 
   const handleCreatePrescription = (patient) => {
+    logger.info("Navigating to prescription form", {
+      patientId: patient?.id,
+      uhid: patient?.uhid,
+    });
     navigate("/prescription-form", { state: { patient } });
   };
 

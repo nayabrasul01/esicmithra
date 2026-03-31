@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createLogger } from "../util/logger";
+
+const logger = createLogger("DraftReferralController");
 
 const ReferralForm = () => {
     const navigate = useNavigate();
@@ -13,10 +16,12 @@ const ReferralForm = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    logger.debug("Referral form updated", { field: name });
   };
 
   const handleRadioChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+    logger.debug("Referral radio changed", { field: name, value });
   };
 
   const handleSubmit = (e) => {
@@ -25,6 +30,11 @@ const ReferralForm = () => {
 
     // later: call backend API here
     alert("Referral submitted");
+    logger.info("Referral form submitted", {
+      doctor: formData.doctor,
+      facilityType: formData.facilityType,
+      referralType: formData.referralType,
+    });
     navigate("/home");
   };
 

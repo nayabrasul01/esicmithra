@@ -5,6 +5,9 @@ import { showToast } from "../util/toastUtil";
 import { IoIosArrowDroprightCircle } from "react-icons/io";
 import { IoIosArrowDropleftCircle } from "react-icons/io";
 import { MdErrorOutline } from "react-icons/md";
+import { createLogger } from "../util/logger";
+
+const logger = createLogger("PatientHistoryModal");
 
 
 const RECORDS_PER_PAGE = 5;
@@ -67,6 +70,7 @@ export default function PatientHistoryModal({
 
   const download = async(docId, fileType)=>{
     try {
+        logger.info("Patient history download requested", { docId, fileType });
         const response = await downloadFile(docId, fileType);
         const blob = new Blob(
             [response.data],
@@ -82,12 +86,14 @@ export default function PatientHistoryModal({
         createFileLink(blob, filename);
         showToast("File downloaded successfully", "success");
     } catch (error) {
+        logger.error("Patient history download failed", error, { docId, fileType });
         showToast(error?.response?.data?.message || error.message || "Download failed", "danger");
     }
 }
 
 const createFileLink = (blob, filename) => {
     const url = window.URL.createObjectURL(blob);
+    logger.debug("Generated download link", { filename });
 
     const a = document.createElement("a");
     a.href = url;

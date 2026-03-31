@@ -4,6 +4,8 @@ import { FaDownload } from "react-icons/fa6";
 import { showToast } from '../util/toastUtil';
 import { MdErrorOutline } from "react-icons/md";
 import CreateUHIDModal from "../components/CreateUHIDModal";
+import ReferralModal from "../components/ReferralModal"
+import { createLogger } from "../util/logger";
 
 import {
     getDashboardData,
@@ -13,6 +15,8 @@ import {
     downloadFile,
     generatePrescription
 } from "../services/authService";
+
+const logger = createLogger("TreatmentController");
 
 const Treatment = () => {
     const { state: patient } = useLocation();
@@ -24,28 +28,51 @@ const Treatment = () => {
         prescription:""
     });
     const [history,setHistory]=useState([]);
-    const [loading,setLoading]=useState(true);
+    const [loading,setLoading]=useState(false);
     const [savedId,setSavedId]=useState(null);
     const [file, setFile] = useState(null);
     const [submittedData, setSubmittedData] = useState(null);
 
     const [showUHIDModal, setShowUHIDModal] = useState(false);
+    const [showReferralModal, setShowReferralModal] = useState(false);
 
     const navigate = useNavigate();
 
     useEffect(() => {
-        if(patient)
+        if(patient){
+            logger.debug("Loading treatment history", {
+                uhid: patient.uHID,
+                savedId,
+            });
             fetchHistory();
+        } else {
+            logger.warn("Treatment screen opened without patient context");
+        }
     }, [savedId]);
 
     const fetchHistory = async ()=>{
         try{
-            if(!patient.uHID) return;
+            if(!patient.uHID){
+                logger.warn("Cannot load history without UHID");
+                return;
+            }
             const res = await getHistory(patient.uHID);
 
-            if(res.data.success)
+            if(res.data.success){
                 setHistory(res.data.data);
+                logger.info("Loaded patient history", {
+                    uhid: patient.uHID,
+                    records: res.data.data?.length ?? 0,
+                });
+            } else {
+                logger.warn("History response unsuccessful", {
+                    uhid: patient.uHID,
+                });
+            }
         }catch(error){
+            logger.error("Failed to load history", error, {
+                uhid: patient?.uHID,
+            });
             showToast(error, "danger")
         }finally{
             setLoading(false);
@@ -61,13 +88,21 @@ const Treatment = () => {
 
     const handleSubmit = async ()=>{
 
-        if(!confirm(`Are you sure you want to create treatment plan for \n${patient.name} - ${patient.uHID} ?`))
-            return;
-        
         if(!patient.uHID){
+            logger.warn("Attempted to submit treatment without UHID", {
+                name: patient?.name,
+            });
             showToast("No UHID found for the dependent. please create uHID first and then try again.", "warning");
             return;
         }
+        
+        if(!confirm(`Are you sure you want to create treatment plan for \n${patient.name} - ${patient.uHID} ?`)){
+            logger.info("Treatment submission cancelled by user", {
+                uhid: patient?.uHID,
+            });
+            return;
+        }
+        
         // Format dob to dd-mm-yyyy
         let dob = patient.dob;
         if (dob && typeof dob === 'string') {
@@ -92,10 +127,21 @@ const Treatment = () => {
         };
         try {
             setLoading(true);
+            logger.info("Saving treatment", {
+                uhid: payload.uhid,
+                ipNumber: payload.ipNumber,
+            });
             const res = await saveTreatment(payload);
             if(res.data.success){
                 payload.treatmentId = res.data.data.id;
+                logger.info("Treatment saved", {
+                    treatmentId: payload.treatmentId,
+                    uhid: payload.uhid,
+                });
                 const response = await generatePrescription(payload);
+                logger.info("Prescription generated", {
+                    treatmentId: payload.treatmentId,
+                });
 
                 const blob = new Blob([response.data], {
                     type: "application/pdf"
@@ -107,14 +153,31 @@ const Treatment = () => {
                 showToast(`Created treatment entry and generated prescription for ${payload.uhid}`, "success");
                 // navigate("/dashboard")
             } else {
+                logger.warn("Treatment save API returned failure", {
+                    uhid: payload.uhid,
+                    message: res.data.message,
+                });
                 showToast(`Failed to save treatment.\n Reason: ${res.data.message}`, "danger");
             }
         } catch (error) {
+            logger.error("Treatment flow failed", error, {
+                uhid: payload.uhid,
+            });
             showToast("Failed to save treatment. Reason: " + error?.response?.data?.message || error.message || "An error occurred while saving treatment", "danger")
         }finally{
             setLoading(false);
         }
     };
+
+    const handleReferral = () => {
+
+        if(!patient.uHID){
+            showToast("No UHID found for the dependent. please create uHID first and then try again.", "warning");
+            return;
+        }
+
+        setShowReferralModal(true);
+    }
 
     const handlePrint = () => {
         window.print();
@@ -122,16 +185,24 @@ const Treatment = () => {
 
     const handleUpload = async(treatmentId,file)=>{
         try{
+            logger.info("Uploading treatment attachment from treatment view", {
+                treatmentId,
+                fileName: file?.name,
+            });
             const res = await uploadFile(treatmentId,file);
             showToast(res.data.message, "success");
             fetchHistory(); // refresh table
         }catch(e){
+            logger.error("Treatment attachment upload failed", e, {
+                treatmentId,
+            });
             showToast(e.response.data.message, "danger")
         }
     }
 
     const download = async(docId, fileType)=>{
         try {
+            logger.info("Downloading attachment", { docId, fileType });
             const response = await downloadFile(docId, fileType);
             const blob = new Blob(
                 [response.data],
@@ -147,12 +218,14 @@ const Treatment = () => {
             createFileLink(blob, filename);
             showToast("File downloaded successfully", "success");
         } catch (error) {
+            logger.error("Download failed", error, { docId, fileType });
             showToast(error?.response?.data?.message || error.message || "Download failed", "danger");
         }
     }
 
     const createFileLink = (blob, filename) => {
         const url = window.URL.createObjectURL(blob);
+        logger.debug("Creating file link", { filename });
 
         const a = document.createElement("a");
         a.href = url;
@@ -226,6 +299,13 @@ const Treatment = () => {
                                {/* <div className="spinner-border spinner-border-sm" role="status"></div> Submit */}
                             </button>
                             <button
+                                type="submit"
+                                className="btn btn-esic"
+                                onClick={handleReferral}
+                            >
+                                Create Referral
+                            </button>
+                            <button
                                 type="button"
                                 className="btn btn-esic"
                                 onClick={() => navigate('/dashboard')}
@@ -239,7 +319,15 @@ const Treatment = () => {
                         onClose={() => 
                             setShowUHIDModal(false)}
                         patient={patient}
-                    />                           
+                    />
+
+                     <ReferralModal
+                        show={showReferralModal}
+                        user={user}
+                        patient={patient}
+                        referral={null}
+                        onClose={()=>setShowReferralModal(false)}
+                    />                     
                     {/* HISTORY TABLE */}
                     
                     <div className="card mb-4 shadow">

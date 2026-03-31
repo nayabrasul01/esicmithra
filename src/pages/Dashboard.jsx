@@ -1,12 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useNavigate } from "react-router-dom";
 import { searchByIpNumber } from "../services/authService";
+import { validateCaptcha } from "../services/dashboardService"
 import { showToast } from '../util/toastUtil';
+import { createLogger } from "../util/logger";
+
+import ReCAPTCHA from 'react-google-recaptcha'
+
+
+const logger = createLogger("DashboardController");
 
 
 const Dashboard = () => {
   
+  const REACT_APP_SITE_KEY = "6LcaHp8sAAAAAC1dZW2ZJiGcx7Ls1pKZkvDuSJJN";
+
   const [userData, setUserData] = useState(null);
   const userId = localStorage.getItem("userId");
   const [selected, setSelected] = useState(null);
@@ -16,20 +25,30 @@ const Dashboard = () => {
   const [ipNumber, setIpNumber] = useState("");
   const [searching, setSearching] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [notRobotConfirmed, setNotRobotConfirmed] = useState(true);
   // const [showResult, setShowResult] = useState(false);
 
   const navigate = useNavigate();
 
   
 const handleSearch = async () => {
+  if (!notRobotConfirmed) {
+    setErrorMsg("Please confirm you are not a robot before searching");
+    logger.warn("IP search blocked because human check was not confirmed", {
+      ipNumber,
+    });
+    return;
+  }
   if (ipNumber.length !== 10) {
     setErrorMsg("IP Number must be exactly 10 digits");
+    logger.warn("IP search blocked due to invalid length", { ipNumber });
     return;
   }
   setSearching(true);
   setErrorMsg("");
   setList([]);
   setSelected(null);
+  logger.info("Searching IP details", { ipNumber });
 
   try {
     const res = await searchByIpNumber(ipNumber);
@@ -38,13 +57,16 @@ const handleSearch = async () => {
       if(res.data.data.InsuredPersonFamilyDetails == null 
         || res.data.data.personalDetails == null){
           showToast("No records found for the given IP.", "warning");
+          logger.warn("Dashboard search returned empty personal details", {
+            ipNumber,
+          });
           return;
         }
       setList(res.data.data.InsuredPersonFamilyDetails || []);
 
       const selfMember = {
         name: res.data.data.personalDetails[0].name,
-        relationship: "self",
+        relationship: "Self",
         dob: res.data.data.personalDetails[0].dateOfBirth,
         sex: res.data.data.personalDetails[0].sex,
         residingState: res.data.data.AddressDetails[0].address1,
@@ -52,151 +74,174 @@ const handleSearch = async () => {
         uHID:res.data.data.uHID
       };
         setList(prevList => [selfMember,...prevList]);
+        logger.info("Dashboard search returned records", {
+          ipNumber,
+          totalMembers: (res.data.data.InsuredPersonFamilyDetails || []).length + 1,
+        });
         showToast("Records fetched.", "success")
+      } else {
+        logger.warn("Dashboard search response indicated failure", {
+          ipNumber,
+          message: res.data.message,
+        });
       }
       setSearching(false);
     } catch (err) {
       alert("Failed to load dashboard. " + err);
       showToast("Failed to load dashboard. " + err, "danger");
+      logger.error("Dashboard search failed", err, { ipNumber });
       // navigate("/");
     } finally {
       setSearching(false);
+      logger.debug("Dashboard search completed", { ipNumber });
     }
   }
 
   const goNext = () => {
     selected.ipNumber = ipNumber;
+    logger.info("Navigating to treatment", {
+      ipNumber,
+      uhid: selected?.uHID,
+      relationship: selected?.relationship,
+    });
     navigate("/treatment", { state: selected });
   };
 
+  const validateReCaptcha = async (value) => {
+    try {
+      const res = await validateCaptcha(value);
+      if(res.success) {
+        setNotRobotConfirmed(true);
+      }
+    } catch (error) {
+      setNotRobotConfirmed(false);
+    }
+  }
+
 return (
-    <div className="container mt-2 py-5 font-esic">
+  <div className="container font-esic">
 
-      <div className="position-relative mb-3">
-        <h3>Insured Person(IP) Details</h3>
-        {/* <button
-          className="btn btn-danger position-absolute"
-          style={{ top: 0, right: 0 }}
-          onClick={logout}
-          aria-label="Logout"
+    {!searching && list.length === 0 && (
+      <div className="alert alert-warning">
+        Enter a 10-digit IP number and click Search to see member details.
+      </div>
+    )}
+
+    <div className="position-relative mb-3">
+      <h3>Insured Person (IP) Details</h3>
+    </div>
+
+    <div className="row mb-3 align-items-end">
+      <div className="col-md-4 col-sm-12 mb-2">
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Enter 10-digit IP Number"
+          value={ipNumber}
+          maxLength={10}
+          inputMode="numeric"
+          onChange={(e) => setIpNumber(e.target.value.replace(/\D/g, ""))}
+        />
+      </div>
+ 
+      <div className="col-md-3 col-sm-12 my-auto">
+        <ReCAPTCHA sitekey={REACT_APP_SITE_KEY} onChange={validateReCaptcha} />      
+      </div>
+
+      <div className="d-flex col-md-5 col-sm-12 mb-2 gap-2">
+        <button
+          className="btn btn-esic w-100"
+          onClick={handleSearch}
+          disabled={searching || ipNumber.length !== 10 || !notRobotConfirmed}
+          // disabled={false}
         >
-          <TbLogout2 />
-        </button> */}
-      </div>
-      <div className="row mb-3 align-items-end">
-        <div className="col-md-4 col-sm-12 mb-2">
-            <input
-        type="text"
-        className="form-control"
-        placeholder="Enter 10-digit IP Number"
-        value={ipNumber}
-        maxLength={10}
-        inputMode="numeric"
-        onChange={(e) =>
-          setIpNumber(e.target.value.replace(/\D/g, ""))
-        }
-      />
+          {searching ? "Searching..." : "Search"}
+        </button>
 
+        <button
+          className="btn btn-secondary w-100"
+          onClick={() => navigate("/home")}
+        >
+          Back
+        </button>
+      </div>
     </div>
 
-    <div className="d-flex col-md-2 col-sm-12 mb-2">
-      <button
-        className="btn btn-esic w-100 mx-3"
-        onClick={handleSearch}
-        disabled={searching || ipNumber.length !== 10}
-      >
-        {searching ? "Searching..." : "Search"}
-      </button>
+    {errorMsg && (
+      <div className="alert alert-warning mt-2">{errorMsg}</div>
+    )}
 
-      <button
-        className="btn btn-esic w-100"
-        onClick={() => {
-          navigate("/home")
-        }}
-      >
-        Back
-      </button>
+    {searching && <LoadingSpinner message="Fetching IP details..." />}
 
+    {!searching && list.length > 0 && (
+      <>
+        <div className="mb-2 text-muted">
+          Select a row (or radio) and click Next.
         </div>
-      </div>
-      
-      {errorMsg && (
-        <div className="alert alert-warning mt-2">
-          {errorMsg}
-        </div>
-      )}
-      {/*Loading Spinner */}
-      {searching && (
-        <LoadingSpinner message="Fetching IP details..." />
-      )}
 
-      {/* if empty data returned */}
-      {/* {!searching && list.length === 0 && (
-        <div className="alert alert-warning d-flex align-items-center mt-3" role="alert">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-info-circle me-2" viewBox="0 0 16 16">
-            <path d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16z"/>
-            <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 .877-.252 1.02-.797l.088-.416c.066-.3.115-.399.403-.457l.088-.02.082-.38-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 .877-.252 1.02-.797l.088-.416c.066-.3.115-.399.403-.457l.088-.02.082-.38z"/>
-            <circle cx="8" cy="4.5" r="1"/>
-          </svg>
-          <div>No results found for the given IP.</div>
-        </div>
-      )} */}
-
-      {/*Table (only after data is loaded) */}
-      {!searching && list.length > 0 && (
-        <>
-            <div className="table-responsive">
-              <table className="table table-hover align-middle table-striped border">
-                <thead className="table-light">
-                  <tr>
-                    <th colSpan="6" style={{ textAlign: "center" }}>
-                      <h3 style={{ margin: 0 }}>IP Details</h3>
-                    </th>
+        <div className="table-responsive">
+          <table className="table table-hover table-striped border align-middle">
+            <thead className="table-light">
+              <tr>
+                <th colSpan="8" className="text-center">
+                  <h4 className="m-0">IP Details</h4>
+                </th>
+              </tr>
+              <tr>
+                <th>Select</th>
+                <th>Name</th>
+                <th>UHID</th>
+                <th>Relationship</th>
+                <th>Age</th>
+                <th>Gender</th>
+                <th>State</th>
+                <th>Marital Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((m, i) => {
+                const isSelected = selected?.uHID === m.uHID;
+                return (
+                  <tr
+                    key={i}
+                    className={isSelected ? "table-primary" : ""}
+                    onClick={() => setSelected(m)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <td>
+                      <input
+                        type="radio"
+                        name="patient"
+                        checked={isSelected}
+                        onChange={() => setSelected(m)}
+                        aria-label={`Select ${m.name}`}
+                      />
+                    </td>
+                    <td>{m.name || "-"}</td>
+                    <td>{m.uHID || "-"}</td>
+                    <td>{m.relationship || "-"}</td>
+                    <td>{calculateAge(m.dob) || "-"}</td>
+                    <td>{m.sex || "-"}</td>
+                    <td>{m.residingState || "-"}</td>
+                    <td>{m.marstatus || "-"}</td>
                   </tr>
-                  <tr>
-                    <th>Select</th>
-                    <th>Name</th>
-                    <th>UHID</th>
-                    <th>Relationship</th>
-                    <th>Age</th>
-                    <th>Gender</th>
-                    <th>State</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.map((m, i) => (
-                    <tr key={i}>
-                      <td>
-                        <input
-                          type="radio"
-                          name="patient"
-                          onChange={() => setSelected(m)}
-                        />
-                      </td>
-                      <td>{m.name}</td>
-                      <td>{m.uHID}</td>
-                      <td>{m.relationship}</td>
-                      <td>{calculateAge(m.dob)}</td>
-                      <td>{m.sex}</td>
-                      <td>{m.residingState}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-            <button
-              className="btn btn-esic mt-3"
-              disabled={!selected}
-              onClick={goNext}
-            >
-              Next
-            </button>
-            </>
-      )}
-    </div>
-    
-  )
+        <button
+          className="btn btn-esic mt-3"
+          disabled={!selected}
+          onClick={goNext}
+        >
+          Next
+        </button>
+      </>
+    )}
+  </div>
+);
 };
 
 // const styles = {

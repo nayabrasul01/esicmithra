@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { showToast } from '../util/toastUtil';
 import { getStatesData, getDistrictsData, getSubDistrictsData, createUHID } from "../services/treatmentService";
+import { createLogger } from "../util/logger";
+
+const logger = createLogger("CreateUHIDModal");
 
 export default function CreateUHIDModal({ show, onClose, patient }) {
   const [states, setStates] = useState([]);
@@ -41,9 +44,20 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
     
       const loadStates = async () => {
           setLoadingStates(true);
-          const res = await getStatesData();
-          setStates(res);
-          setLoadingStates(false);
+          logger.info("Loading states for UHID modal", {
+            patientUhid: patient?.uHID,
+          });
+          try {
+            const res = await getStatesData();
+            setStates(res);
+            logger.info("States loaded for UHID modal", {
+              count: res?.length ?? 0,
+            });
+          } catch (error) {
+            logger.error("Failed to load states", error);
+          } finally {
+            setLoadingStates(false);
+          }
       };
 
       loadStates();
@@ -55,11 +69,20 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
         setFormData({ ...formData, stateCode, districtCode: "", subDistrictCode: "" });
 
         setLoadingDistricts(true);
+        logger.debug("State changed", { stateCode });
 
-        const res = await getDistrictsData(stateCode);
-
-        setDistricts(res);
-        setLoadingDistricts(false);
+        try {
+          const res = await getDistrictsData(stateCode);
+          setDistricts(res);
+          logger.info("Districts loaded", {
+            stateCode,
+            count: res?.length ?? 0,
+          });
+        } catch (error) {
+          logger.error("Failed to load districts", error, { stateCode });
+        } finally {
+          setLoadingDistricts(false);
+        }
     };
 
     const handleDistrictChange = async (districtCode) => {
@@ -67,9 +90,20 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
 
         setLoadingSubDistricts(true);
 
-        const res = await getSubDistrictsData(districtCode);
-        setSubDistricts(res);
-        setLoadingSubDistricts(false);
+        try {
+          const res = await getSubDistrictsData(districtCode);
+          setSubDistricts(res);
+          logger.info("Sub districts loaded", {
+            districtCode,
+            count: res?.length ?? 0,
+          });
+        } catch (error) {
+          logger.error("Failed to load sub districts", error, {
+            districtCode,
+          });
+        } finally {
+          setLoadingSubDistricts(false);
+        }
     };
 
     const calculateAge = (dob) => {
@@ -94,9 +128,11 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
         dob,
         age
         });
+        logger.debug("Age recalculated for UHID modal", { age });
     };
 
     const handleClose = () => {
+      logger.info("Closing UHID modal");
       // Reset all values
       setFormData({
         firstName: "",
@@ -129,7 +165,7 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
       // Validation
       const fieldLabels = {
         firstName: "First Name",
-        middleName: "Middle Name",
+        // middleName: "Middle Name",
         lastName: "Last Name",
         dob: "Date of Birth",
         gender: "Gender",
@@ -149,12 +185,16 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
       if (emptyFields.length > 0) {
         const missingLabels = emptyFields.map(field => fieldLabels[field]);
         showToast(`Please fill in all required fields:\n${missingLabels.join(', \n')}`, "warning");
+        logger.warn("UHID submission blocked due to validation", {
+          missing: missingLabels,
+        });
         return;
       }
 
       if (!/^\d{6}$/.test(formData.zipCode)) {
         // alert("Pincode must be exactly 6 digits");
         showToast("Pincode must be exactly 6 digits", "warning");
+        logger.warn("Invalid pincode during UHID submission");
         return;
       }
 
@@ -163,15 +203,25 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
 
       try {
         setLoading(true);
+        logger.info("Submitting UHID creation request", {
+          insuranceNo: formData.insuranceNo,
+          relationship: formData.relationship,
+        });
         const res = await createUHID(formData);
         if(res.success){
           showToast("UHID Created: " + res.data.responseMessage, "success");
           patient.uHID = res.data.responseMessage;
+          logger.info("UHID created successfully", {
+            insuranceNo: formData.insuranceNo,
+            uhid: res.data.responseMessage,
+          });
         }
 
         onClose();
       } catch (err) {
-        console.log(err);
+        logger.error("UHID creation failed", err, {
+          insuranceNo: formData.insuranceNo,
+        });
         showToast("UHID creation failed : " + err?.response?.data?.message, "danger");
       }finally{
         setLoading(false);

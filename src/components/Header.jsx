@@ -48,7 +48,7 @@ const Header = () => {
         }}
       >
         {/* ESIC Logo */}
-        <a href="https://esic.gov.in/">
+        <a href="/home">
           <img
             src={logo}
             alt="ESIC Logo"

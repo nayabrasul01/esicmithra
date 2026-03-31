@@ -2,6 +2,9 @@ import { useState, useRef } from "react";
 import { verifyOtp, validateOtp } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 import { showToast } from '../util/toastUtil';
+import { createLogger } from "../util/logger";
+
+const logger = createLogger("OtpModal");
 
 const OtpModal = ({ userId, otpData, onClose }) => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -41,11 +44,16 @@ const OtpModal = ({ userId, otpData, onClose }) => {
   const handleVerify = async () => {
     const finalOtp = otp.join("");
     if (finalOtp.length !== 6) {
+      logger.warn("OTP length invalid", { enteredLength: finalOtp.length });
       return setError("Please enter 4-digit OTP");
     }
 
     try {
       setLoading(true);
+      logger.info("Verifying OTP submission", {
+        userId,
+        otpLength: finalOtp.length,
+      });
       const res = await verifyOtp(userId, finalOtp);
       // const payload = {
       //   Username: userId,
@@ -59,13 +67,22 @@ const OtpModal = ({ userId, otpData, onClose }) => {
       if (res.data.success) {
         localStorage.setItem("session", res.data.data.sessionId);
         localStorage.setItem("user", JSON.stringify(res.data.data.user));
+        logger.info("OTP validation succeeded", {
+          userId,
+          sessionId: res.data.data.sessionId,
+        });
         showToast("Logged In Succesfully.", "success")
         
         navigate("/home");
       } else {
+        logger.warn("OTP validation rejected", {
+          userId,
+          message: res.data.message,
+        });
         setError(res.data.message);
       }
     } catch (err) {
+      logger.error("OTP validation failed", err, { userId });
       setError("Invalid or expired OTP");
     } finally {
       setLoading(false);
