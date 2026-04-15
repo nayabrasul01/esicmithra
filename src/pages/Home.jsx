@@ -78,7 +78,7 @@ export default function DashboardHome() {
 
             <h4 className="fw-bold">Draft Referral</h4>
             <p className="text-muted mb-4" style={{fontSize: "14px"}}>
-              Create referral to ESI or PMJAY hospitals for emergency or routine cases
+              Manage referral requests to ESI or PMJAY hospitals for emergency or routine cases
             </p>
 
             <button

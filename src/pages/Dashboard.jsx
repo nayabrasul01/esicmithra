@@ -14,7 +14,7 @@ const logger = createLogger("DashboardController");
 
 const Dashboard = () => {
   
-  const REACT_APP_SITE_KEY = "6LcaHp8sAAAAAC1dZW2ZJiGcx7Ls1pKZkvDuSJJN";
+  const RECAPTCHA_SITE_KEY = import.meta.env.VITE_SITE_KEY;
 
   const [userData, setUserData] = useState(null);
   const userId = localStorage.getItem("userId");
@@ -25,7 +25,7 @@ const Dashboard = () => {
   const [ipNumber, setIpNumber] = useState("");
   const [searching, setSearching] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [notRobotConfirmed, setNotRobotConfirmed] = useState(true);
+  const [notRobotConfirmed, setNotRobotConfirmed] = useState(true); // should change to false after testing
   // const [showResult, setShowResult] = useState(false);
 
   const navigate = useNavigate();
@@ -145,7 +145,7 @@ return (
       </div>
  
       <div className="col-md-3 col-sm-12 my-auto">
-        <ReCAPTCHA sitekey={REACT_APP_SITE_KEY} onChange={validateReCaptcha} />      
+        <ReCAPTCHA sitekey={RECAPTCHA_SITE_KEY} onChange={validateReCaptcha} />      
       </div>
 
       <div className="d-flex col-md-5 col-sm-12 mb-2 gap-2">
@@ -195,44 +195,33 @@ return (
                 <th>Age</th>
                 <th>Gender</th>
                 <th>State</th>
-                <th>Marital Status</th>
+                {/* <th>Marital Status</th> */}
               </tr>
             </thead>
             <tbody>
-              {list.map((m, i) => {
-                const isSelected = selected?.uHID === m.uHID;
-                return (
-                  <tr
-                    key={i}
-                    className={isSelected ? "table-primary" : ""}
-                    onClick={() => setSelected(m)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <td>
-                      <input
-                        type="radio"
-                        name="patient"
-                        checked={isSelected}
-                        onChange={() => setSelected(m)}
-                        aria-label={`Select ${m.name}`}
-                      />
-                    </td>
-                    <td>{m.name || "-"}</td>
-                    <td>{m.uHID || "-"}</td>
-                    <td>{m.relationship || "-"}</td>
-                    <td>{calculateAge(m.dob) || "-"}</td>
-                    <td>{m.sex || "-"}</td>
-                    <td>{m.residingState || "-"}</td>
-                    <td>{m.marstatus || "-"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
+                  {list.map((m, i) => (
+                    <tr key={i}>
+                      <td>
+                        <input
+                          type="radio"
+                          name="patient"
+                          onChange={() => setSelected(m)}
+                        />
+                      </td>
+                      <td>{m.name}</td>
+                      <td>{m.uHID}</td>
+                      <td>{m.relationship}</td>
+                      <td>{calculateAge(m.dob)}</td>
+                      <td>{m.sex}</td>
+                      <td>{m.residingState}</td>
+                    </tr>
+                  ))}
+                </tbody>
           </table>
         </div>
 
         <button
-          className="btn btn-esic mt-3"
+          className="btn btn-esic mt-1 mb-5"
           disabled={!selected}
           onClick={goNext}
         >

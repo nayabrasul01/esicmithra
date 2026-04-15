@@ -56,7 +56,7 @@ const hasVisited = sessionStorage.getItem('hasVisited');
         /> */}
         © <span></span>{' '}
         <strong>
-          <span>ESIC 2025</span>
+          <span>ESIC 2026</span>
         </strong>
         . <span>All Rights Reserved</span>
       </div>

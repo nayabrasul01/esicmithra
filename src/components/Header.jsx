@@ -48,11 +48,12 @@ const Header = () => {
         }}
       >
         {/* ESIC Logo */}
-        <a href="/home">
+        <a>
           <img
             src={logo}
             alt="ESIC Logo"
-            style={{ height: "75px", objectFit: "contain" }}
+            style={{ height: "75px", objectFit: "contain", cursor: 'pointer' }}
+            onClick={() => navigate("/home")}
           />
         </a>
 

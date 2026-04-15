@@ -26,6 +26,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
       patientPhotoId: "",
       attendantName: "",
       attendantRelation: "",
+      locationId: user?.locationId || ""
     },
     referralDetails:{
       referralNature: "",
@@ -34,7 +35,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
       referralCircumstances: [],
       referredHospitalName: "",
       referringDoctorName: "",
-      
+      createdBy: user?.userId || "",
       diagnoses: [{
         snomedDiagnosis: "",
         icdCode: "",
@@ -141,7 +142,8 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
 
     // Validate form data before submission
     if (!validateForm(updatedFormData)) return;
-
+    console.log(updatedFormData);
+    
     try {
       const response = await createReferralRequest(updatedFormData);
       if (response.success) {

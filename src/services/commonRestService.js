@@ -4,9 +4,7 @@ import { createLogger } from "../util/logger";
 const logger = createLogger("APIClient");
 
 const API = axios.create({
-  baseURL: "http://localhost:8080/api",
-  // baseURL: "http://10.10.13.233:9092/api",
-  // baseURL: "/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api",
 });
 
 API.interceptors.request.use((config) => {

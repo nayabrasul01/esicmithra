@@ -5,6 +5,7 @@ import { MdCancel } from "react-icons/md";
 import { FaDownload, FaUpload } from "react-icons/fa6";
 import { IoIosArrowDroprightCircle } from "react-icons/io";
 import { IoIosArrowDropleftCircle } from "react-icons/io";
+import { RiErrorWarningFill } from "react-icons/ri";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 import { fetchReferrals, downloadFile, uploadFile, updateStatus } from "../services/referralService";
@@ -30,7 +31,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
   const [search, setSearch] = useState("");
 
   const [page, setPage] = useState(1);
-  const recordsPerPage = 5;
+  const recordsPerPage = 10;
 
   useEffect(() => {
 
@@ -247,7 +248,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
 
       <div className="card-body p-0">
 
-        <table className="table table-bordered table-hover mb-0">
+        <table className="table table-bordered table-hover mb-0 text-esic">
 
           { loader ? 
             <LoadingSpinner message="Processing..." />
@@ -313,20 +314,25 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
                                 e.preventDefault();
                                 downloadReferralForm(r.id, "APPROVED_FILE");
                             }}
-                            style={{ cursor: 'pointer', color: '#147447', textDecoration: 'underline' }}
+                            style={{ cursor: 'pointer', color: '#147447'}}
                           >
-                            <FaDownload title="Download" />
+                            <FaDownload title="Download" /> Download
                           </a>
                           ) : (
-                            <label style={{cursor : 'pointer'}}>
-                            <FaUpload title="Upload" color="#bb2d3c"/>
+                            <label style={{cursor : 'pointer', color: '#bb2d3c'}}>
+                            <FaUpload title="Upload" /> Upload
                             <input
                               disabled={r.referralStatus === 'REJECTED'}
                               type="file"
                               style={{display : "none"}}
                               className="form-control form-control-sm"
-                              onChange={(e) =>
-                                handleUpload(r.referralId, r.id, e.target.files[0], {current: e.target})
+                              onChange={(e) => {
+                                  // if(r.referralStatus === 'REJECTED'){
+                                  //   showToast("Request already rejected, cannot upload.", "warning");
+                                  //   return;
+                                  // }
+                                  handleUpload(r.referralId, r.id, e.target.files[0], {current: e.target})
+                                }
                               }
                             />
                             </label>
@@ -361,7 +367,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
 
                         )}
                         {isDoctor && (r.referralStatus === 'APPROVED' || r.referralStatus === 'REJECTED') && (
-                          <td className="my-auto">No action required.</td>
+                          <td className="my-auto"><RiErrorWarningFill color="#9c231c" /> No action required.</td>
                         )}
 
                         </tr>

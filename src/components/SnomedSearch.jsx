@@ -15,25 +15,25 @@ const SnomedSearch = ({ onSelect }) => {
 
   useEffect(() => {
 
-  if (skipSearchRef.current) {
-    skipSearchRef.current = false;
-    return;
-  }
+    if (skipSearchRef.current) {
+      skipSearchRef.current = false;
+      return;
+    }
 
-  if (query.length < 3) {
-    setResults([]);
-    return;
-  }
+    if (query.length < 3) {
+      setResults([]);
+      return;
+    }
 
-  if (debounceRef.current) {
-    clearTimeout(debounceRef.current);
-  }
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
 
-  debounceRef.current = setTimeout(() => {
-    searchSnomed(query);
-  }, 500);
+    debounceRef.current = setTimeout(() => {
+      searchSnomed(query);
+    }, 500);
 
-}, [query]);
+  }, [query]);
 
   const searchSnomed = async (keyword) => {
     try {
@@ -66,7 +66,7 @@ const SnomedSearch = ({ onSelect }) => {
         conceptId
       });
 
-      skipSearchRef.current = true;   // prevent next search
+      skipSearchRef.current = true;   // prevent next search after query is set
       setQuery(term);
       setResults([]);
       setShowDropdown(false);
