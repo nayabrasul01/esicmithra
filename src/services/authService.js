@@ -69,7 +69,7 @@ export const searchByIpNumber = (ipNumber) => {
 };
 
 export const getHistory = (uhid) =>
-  API.get(`/treatment/history/${uhid}`).then((response) => {
+API.get(`/treatment/history/${uhid}`).then((response) => {
     logger.info("Fetched history", {
       uhid,
       records: response?.data?.data?.length || 0,
@@ -156,6 +156,13 @@ export const generatePrescription = (payload) =>
   throw error;
 });
 
+export const verifyAltcha = (altchaPayload) => {
+  return API.post(`/altcha/verify`, null, {
+    headers: {
+      "X-Altcha-Payload": altchaPayload
+    }
+  });
+}
   // export const sendOtp = (userId) => {
 //   return new Promise((resolve) => {
 //     setTimeout(() => {

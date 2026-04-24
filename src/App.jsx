@@ -9,6 +9,7 @@ import PatientsList from "./pages/PatientsList";
 import PrescriptionForm from "./pages/PrescriptionForm";
 import DraftReferral from "./pages/DraftReferral"
 import ReferralPage from "./pages/ReferralPage";
+import Certifications from "./pages/Certifications";
 
 function App() {
   return (
@@ -75,6 +76,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <ReferralPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/create-certificate"
+            element={
+              <ProtectedRoute>
+                <Certifications />
               </ProtectedRoute>
             }
           />

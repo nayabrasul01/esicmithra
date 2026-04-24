@@ -1,20 +1,18 @@
 import { useEffect, useState, useRef } from "react";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useNavigate } from "react-router-dom";
-import { searchByIpNumber } from "../services/authService";
+import { searchByIpNumber, verifyAltcha } from "../services/authService";
 import { validateCaptcha } from "../services/dashboardService"
 import { showToast } from '../util/toastUtil';
 import { createLogger } from "../util/logger";
 
-import ReCAPTCHA from 'react-google-recaptcha'
-
+import 'altcha';
+import "altcha/themes/business.css";
 
 const logger = createLogger("DashboardController");
 
-
 const Dashboard = () => {
-  
-  const RECAPTCHA_SITE_KEY = import.meta.env.VITE_SITE_KEY;
+  const formRef = useRef(null);
 
   const [userData, setUserData] = useState(null);
   const userId = localStorage.getItem("userId");
@@ -25,20 +23,29 @@ const Dashboard = () => {
   const [ipNumber, setIpNumber] = useState("");
   const [searching, setSearching] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [notRobotConfirmed, setNotRobotConfirmed] = useState(true); // should change to false after testing
   // const [showResult, setShowResult] = useState(false);
+  const [captchaPayload, setCaptchaPayload] = useState(null);
 
   const navigate = useNavigate();
 
   
-const handleSearch = async () => {
-  if (!notRobotConfirmed) {
-    setErrorMsg("Please confirm you are not a robot before searching");
-    logger.warn("IP search blocked because human check was not confirmed", {
-      ipNumber,
-    });
+const handleSearch = async (e) => {
+  e.preventDefault();
+
+  const form = formRef.current;
+  const isCaptchaReady = !!form.querySelector('input[name="altcha"]')?.value;
+  if(!isCaptchaReady) {
+    showToast("Captcha is not ready yet. Please wait a moment and try again.", "warning");
     return;
   }
+  // ALTCHA automatically injects hidden input
+  const altchaPayload = form.querySelector('input[name="altcha"]')?.value;
+
+  if (!altchaPayload) {
+    showToast("CAPTCHA is not ready yet. Please wait a moment and try again.", "warning");
+    return;
+  }
+
   if (ipNumber.length !== 10) {
     setErrorMsg("IP Number must be exactly 10 digits");
     logger.warn("IP search blocked due to invalid length", { ipNumber });
@@ -51,34 +58,39 @@ const handleSearch = async () => {
   logger.info("Searching IP details", { ipNumber });
 
   try {
-    const res = await searchByIpNumber(ipNumber);
 
-    if (res.data.success) {
-      if(res.data.data.InsuredPersonFamilyDetails == null 
-        || res.data.data.personalDetails == null){
-          showToast("No records found for the given IP.", "warning");
-          logger.warn("Dashboard search returned empty personal details", {
-            ipNumber,
-          });
-          return;
+    const res = await verifyAltcha(altchaPayload);
+
+      if(res.data.verified){
+      const res = await searchByIpNumber(ipNumber);
+
+      if (res.data.success) {
+        if(res.data.data.InsuredPersonFamilyDetails == null 
+          || res.data.data.personalDetails == null){
+            showToast("No records found for the given IP.", "warning");
+            logger.warn("Dashboard search returned empty personal details", {
+              ipNumber,
+            });
+            return;
+          }
+          setList(res.data.data.InsuredPersonFamilyDetails || []);
+
+          const selfMember = {
+            name: res.data.data.personalDetails[0].name,
+            relationship: "Self",
+            dob: res.data.data.personalDetails[0].dateOfBirth,
+            sex: res.data.data.personalDetails[0].sex,
+            residingState: res.data.data.AddressDetails[0].address1,
+            marstatus: res.data.data.personalDetails[0].maritalStatus,
+            uHID:res.data.data.uHID
+          };
+            setList(prevList => [selfMember,...prevList]);
+            logger.info("Dashboard search returned records", {
+              ipNumber,
+              totalMembers: (res.data.data.InsuredPersonFamilyDetails || []).length + 1,
+            });
+            showToast("Records fetched.", "success")
         }
-      setList(res.data.data.InsuredPersonFamilyDetails || []);
-
-      const selfMember = {
-        name: res.data.data.personalDetails[0].name,
-        relationship: "Self",
-        dob: res.data.data.personalDetails[0].dateOfBirth,
-        sex: res.data.data.personalDetails[0].sex,
-        residingState: res.data.data.AddressDetails[0].address1,
-        marstatus: res.data.data.personalDetails[0].maritalStatus,
-        uHID:res.data.data.uHID
-      };
-        setList(prevList => [selfMember,...prevList]);
-        logger.info("Dashboard search returned records", {
-          ipNumber,
-          totalMembers: (res.data.data.InsuredPersonFamilyDetails || []).length + 1,
-        });
-        showToast("Records fetched.", "success")
       } else {
         logger.warn("Dashboard search response indicated failure", {
           ipNumber,
@@ -87,8 +99,8 @@ const handleSearch = async () => {
       }
       setSearching(false);
     } catch (err) {
-      alert("Failed to load dashboard. " + err);
-      showToast("Failed to load dashboard. " + err, "danger");
+      alert(err?.response?.data?.message);
+      showToast(err?.response?.data?.message, "danger");
       logger.error("Dashboard search failed", err, { ipNumber });
       // navigate("/");
     } finally {
@@ -107,17 +119,6 @@ const handleSearch = async () => {
     navigate("/treatment", { state: selected });
   };
 
-  const validateReCaptcha = async (value) => {
-    try {
-      const res = await validateCaptcha(value);
-      if(res.success) {
-        setNotRobotConfirmed(true);
-      }
-    } catch (error) {
-      setNotRobotConfirmed(false);
-    }
-  }
-
 return (
   <div className="container font-esic">
 
@@ -131,42 +132,42 @@ return (
       <h3>Insured Person (IP) Details</h3>
     </div>
 
-    <div className="row mb-3 align-items-end">
-      <div className="col-md-4 col-sm-12 mb-2">
-        <input
-          type="text"
-          className="form-control"
-          placeholder="Enter 10-digit IP Number"
-          value={ipNumber}
-          maxLength={10}
-          inputMode="numeric"
-          onChange={(e) => setIpNumber(e.target.value.replace(/\D/g, ""))}
-        />
-      </div>
- 
-      <div className="col-md-3 col-sm-12 my-auto">
-        <ReCAPTCHA sitekey={RECAPTCHA_SITE_KEY} onChange={validateReCaptcha} />      
-      </div>
+    <form ref={formRef} onSubmit={handleSearch}>
+      <div className="row mb-3 align-items-end">
+        <div className="col-md-4 col-sm-12 mb-2">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Enter 10-digit IP Number"
+            value={ipNumber}
+            maxLength={10}
+            inputMode="numeric"
+            onChange={(e) => setIpNumber(e.target.value.replace(/\D/g, ""))}
+          />
+        </div>
+  
+        <div className="col-md-3 col-sm-12 my-auto">
+          <altcha-widget type="switch" challenge= {import.meta.env.VITE_API_BASE_URL + "/altcha/challenge"} theme="business" ></altcha-widget>
+        </div>
 
-      <div className="d-flex col-md-5 col-sm-12 mb-2 gap-2">
-        <button
-          className="btn btn-esic w-100"
-          onClick={handleSearch}
-          disabled={searching || ipNumber.length !== 10 || !notRobotConfirmed}
-          // disabled={false}
-        >
-          {searching ? "Searching..." : "Search"}
-        </button>
+        <div className="d-flex col-md-5 col-sm-12 mb-2 gap-2">
+          <button
+            type="submit"
+            className="btn btn-esic w-100"
+            disabled={searching || ipNumber.length !== 10}
+          >
+            {searching ? "Searching..." : "Search"}
+          </button>
 
-        <button
-          className="btn btn-secondary w-100"
-          onClick={() => navigate("/home")}
-        >
-          Back
-        </button>
+          <button
+            className="btn btn-secondary w-100"
+            onClick={() => navigate("/home")}
+          >
+            Back
+          </button>
+        </div>
       </div>
-    </div>
-
+    </form>
     {errorMsg && (
       <div className="alert alert-warning mt-2">{errorMsg}</div>
     )}

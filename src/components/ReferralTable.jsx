@@ -175,7 +175,6 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
     }
   };
 
-  // Currently not using. This function is for getting patient details and send to referral modal.
   const getPatientLiveListData = async (ipNumber) => {
     setPatientsDetailsList([]);
 
