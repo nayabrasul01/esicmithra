@@ -9,7 +9,7 @@ import PatientsList from "./pages/PatientsList";
 import PrescriptionForm from "./pages/PrescriptionForm";
 import DraftReferral from "./pages/DraftReferral"
 import ReferralPage from "./pages/ReferralPage";
-import Certifications from "./pages/Certifications";
+import CertificationPage from "./pages/CertificatePage";
 
 function App() {
   return (
@@ -84,7 +84,7 @@ function App() {
             path="/create-certificate"
             element={
               <ProtectedRoute>
-                <Certifications />
+                <CertificationPage />
               </ProtectedRoute>
             }
           />

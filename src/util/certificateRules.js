@@ -1,0 +1,47 @@
+export const CERTIFICATE_TYPES = {
+  FIRST: "FIRST",
+  FIRST_FINAL: "FIRST_FINAL",
+  INTERMEDIATE: "INTERMEDIATE",
+  FINAL: "FINAL"
+};
+
+export const SPELL_TYPES = {
+  FRESH: "FRESH",
+  ONGOING: "ONGOING"
+};
+
+// certificateRules.js
+export const CERTIFICATE_RULES = {
+  FIRST_FINAL: {
+    allowedSpellTypes: ["FRESH"],
+    eligibleLeaves: 3,
+    show: {
+      fitDate: true,
+      followUpDate: false,
+      hospitalization: true,
+      issueDate: true
+    }
+  },
+
+  FIRST: {
+    allowedSpellTypes: ["FRESH"],
+    eligibleLeaves: 7,
+    show: {
+      fitDate: false,
+      followUpDate: true,
+      hospitalization: true,
+      issueDate: true
+    }
+  },
+
+  INTERMEDIATE: {
+    allowedSpellTypes: ["ONGOING"],
+    eligibleLeaves: 7,
+    show: {
+      fitDate: false,
+      followUpDate: true,
+      hospitalization: true,
+      issueDate: true
+    }
+  }
+};
