@@ -22,7 +22,7 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
     insurenceSeq: patient?.ipListId || "0",
     relationship: "",
     ageUOM: "Years",
-    gender: patient?.sex || "",
+    gender: patient?.sex == "F" ? "Female" : patient?.sex == "M" ? "Male" : patient?.sex == "O" ? "Other" : patient?.sex == "U" ? "Unknown" : patient?.sex == "A" ? "Ambiguous" : patient?.sex == "N" ? "Not Applicable" : patient?.sex == "T" ? "TG" : "",
     marstatus: patient?.marstatus === "Married" ? "Married" : patient?.marstatus === "Unmarried" ? "Single" : "",
     titleName: "",
     address1: "",
@@ -129,7 +129,7 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
       // Validation
       const fieldLabels = {
         firstName: "First Name",
-        middleName: "Middle Name",
+        // middleName: "Middle Name",
         lastName: "Last Name",
         dob: "Date of Birth",
         gender: "Gender",
@@ -259,10 +259,22 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
               onChange={(e)=>setFormData({...formData,titleName:e.target.value})}
               >
               <option value="">Select</option>
+              {/* <option value="Father">Father</option>
+              <option value="Madam">Madam</option> */}
+              <option value="Baby">Baby</option>
+              <option value="Master">Master</option>
+              <option value="Miss.">Miss.</option>
               <option value="Mr.">Mr.</option>
+              <option value="Ms.">Ms.</option>
+              {/* <option value="Sister.">Sister.</option> */}
               <option value="Mrs.">Mrs.</option>
-              <option value="Miss">Miss</option>
+              <option value="M/s.">M/s.</option>
               <option value="Dr.">Dr.</option>
+              {/* <option value="Sh">Sh</option>
+              <option value="Smt">Smt</option>
+              <option value="Sk.">Sk.</option>
+              <option value="Smr">Smr</option>
+              <option value="Mx.">Mx.</option> */}
               </select>
               </div>
               </div>
@@ -293,13 +305,17 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
               <select
               className="form-select"
               value={formData.gender}
-              disabled={formData.gender}
+              // disabled={formData.gender}
               onChange={(e)=>setFormData({...formData,gender:e.target.value})}
               >
               <option value="">Select</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
-              <option value="Other">Other</option>
+              <option value="Others">Others</option>
+              <option value="Unknown">Unknown</option>
+              <option value="Ambiguous">Ambiguous</option>
+              <option value="Not Applicable">Not Applicable</option>
+              <option value="TG">TG</option>
               </select>
               </div>
               </div>
