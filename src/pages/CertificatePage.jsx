@@ -42,12 +42,12 @@ export default function CertificatePage() {
           ipNumber: ipNumber,
         };
         setPatient(selfMember);
-        showToast("Records fetched.", "success");
+        // showToast("Patient records fetched.", "success");
       }
       setSearching(false);
     } catch (err) {
       console.log(err);
-      alert(err?.response?.data?.message);
+      // alert(err?.response?.data?.message);
       showToast(err?.response?.data?.message, "danger");
     } finally {
       setSearching(false);
@@ -64,7 +64,7 @@ export default function CertificatePage() {
         >
           Medical Certificate Generation
         </div>
-        <div className="card-body">
+        <div className="card-body text-esic">
           {/* <h5>Certificate Generation</h5> */}
           <div className="d-flex gap-2">
             <div className="form-label my-auto" style={{ fontSize: "18px" }}>
@@ -99,18 +99,18 @@ export default function CertificatePage() {
       {/* Patient Info */}
       {!searching && patient && (
         <div className="card mb-3 shadow-sm">
-          <div className="card-body">
-            <h6>Patient Info</h6>
+          <div className="card-header text-esic">Patient Information</div>
+          <div className="card-body text-esic">
             <div className="row">
-              <div className="col-md-2">Insurance No.: {patient.ipNumber}</div>
-              <div className="col-md-2">UHID: {patient.uHID}</div>
-              <div className="col-md-2">Name: {patient.name}</div>
-              <div className="col-md-2">DOB: {patient.dob.split(" ")[0]}</div>
+              <div className="col-md-2">Insurance No.: <b>{patient.ipNumber}</b></div>
+              <div className="col-md-2">UHID: <b>{patient.uHID}</b></div>
+              <div className="col-md-2">Name: <b>{patient.name}</b></div>
+              <div className="col-md-2">DOB: <b>{patient.dob.split(" ")[0]}</b></div>
               <div className="col-md-2">
-                Age/Gender: {calculateAge(patient.dob)} Years/{patient.sex}
+                Age/Gender: <b>{calculateAge(patient.dob)} Years/{patient.sex}</b>
               </div>
               <div className="col-md-2">
-                Relationship: {patient.relationship}
+                Relationship: <b>{patient.relationship}</b>
               </div>
             </div>
           </div>

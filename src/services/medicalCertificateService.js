@@ -29,3 +29,15 @@ export const fetchPreviousCertificateHistory = async (ipNumber) => {
     throw error;
   }
 };
+
+export const closePreviousInProgressCertificate = async (ipNumber) => {
+  try {
+    const res = await API.put(`/certificates/close-all/${ipNumber}`);
+    return res.data;
+  } catch (error) {
+    logger.error("Error closing previous in-progress certificate", error, {
+      ipNumber,
+    });
+    throw error;
+  }
+}

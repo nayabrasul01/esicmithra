@@ -8,28 +8,39 @@ export const formatDate = (date) => {
   return new Date(date).toISOString().split("T")[0];
 };
 
-export const calculateLeaveDates = ({
-  type,
-  previousCert,
-  leavesRequired
-}) => {
+// export const calculateLeaveDates = ({ type, previousCert, leavesRequired }) => {
+//   const today = new Date();
+
+//   let leaveFrom;
+
+//   if (previousCert?.leaveTo) {
+//     const nextDay = addDays(previousCert.leaveTo, 1);
+//     leaveFrom = nextDay > today ? nextDay : today;
+//   } else {
+//     leaveFrom = today;
+//   }
+
+//   const leaveTo = addDays(leaveFrom, leavesRequired - 1);
+
+//   return {
+//     leaveFrom: formatDate(leaveFrom),
+//     leaveTo: formatDate(leaveTo),
+//   };
+// };
+
+export const calculateLeaveFrom = (leaveTo) => {
   const today = new Date();
 
   let leaveFrom;
 
-  if (previousCert?.leaveTo) {
-    const nextDay = addDays(previousCert.leaveTo, 1);
+  if (leaveTo) {
+    const nextDay = addDays(leaveTo, 1);
     leaveFrom = nextDay > today ? nextDay : today;
   } else {
     leaveFrom = today;
   }
 
-  const leaveTo = addDays(leaveFrom, leavesRequired - 1);
-
-  return {
-    leaveFrom: formatDate(leaveFrom),
-    leaveTo: formatDate(leaveTo)
-  };
+  return formatDate(leaveFrom);
 };
 
 export const calculateLeaveTo = (leaveFrom, days) => {
@@ -41,7 +52,6 @@ export const calculateLeaveTo = (leaveFrom, days) => {
   return date.toISOString().split("T")[0];
 };
 
-
 export const calculateFollowUpDate = (leaveTo, days) => {
   if (!leaveTo || !days) return "";
 
@@ -50,4 +60,3 @@ export const calculateFollowUpDate = (leaveTo, days) => {
 
   return date.toISOString().split("T")[0];
 };
-

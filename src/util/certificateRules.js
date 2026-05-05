@@ -43,5 +43,27 @@ export const CERTIFICATE_RULES = {
       hospitalization: true,
       issueDate: true
     }
+  },
+
+  SPECIAL_INTERMEDIATE: {
+    allowedSpellTypes: ["ONGOING"],
+    eligibleLeaves: 28,
+    show: {
+      fitDate: false,
+      followUpDate: true,
+      hospitalization: true,
+      issueDate: true
+    }
+  },
+
+  FINAL: {
+    allowedSpellTypes: ["ONGOING"],
+    eligibleLeaves: 7,
+    show: {
+      fitDate: true,
+      followUpDate: false,
+      hospitalization: true,
+      issueDate: true
+    }
   }
 };
