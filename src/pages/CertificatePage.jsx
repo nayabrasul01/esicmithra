@@ -102,15 +102,15 @@ export default function CertificatePage() {
           <div className="card-header text-esic">Patient Information</div>
           <div className="card-body text-esic">
             <div className="row">
-              <div className="col-md-2">Insurance No.: <b>{patient.ipNumber}</b></div>
-              <div className="col-md-2">UHID: <b>{patient.uHID}</b></div>
-              <div className="col-md-2">Name: <b>{patient.name}</b></div>
-              <div className="col-md-2">DOB: <b>{patient.dob.split(" ")[0]}</b></div>
+              <div className="col-md-2"><b>Insurance No.: </b>{patient.ipNumber}</div>
+              <div className="col-md-2"><b>UHID: </b>{patient.uHID}</div>
+              <div className="col-md-2"><b>Name: </b>{patient.name}</div>
+              <div className="col-md-2"><b>DOB: </b>{patient.dob.split(" ")[0]}</div>
               <div className="col-md-2">
-                Age/Gender: <b>{calculateAge(patient.dob)} Years/{patient.sex}</b>
+                <b>Age/Gender: </b>{calculateAge(patient.dob)} Years/{patient.sex}
               </div>
               <div className="col-md-2">
-                Relationship: <b>{patient.relationship}</b>
+                <b>Relationship: </b>{patient.relationship}
               </div>
             </div>
           </div>

@@ -4,6 +4,7 @@ import {
   calculateLeaveTo,
   calculateFollowUpDate,
   calculateLeaveFrom,
+  addDays,
 } from "../util/dateUtils";
 import { showToast } from "../util/toastUtil";
 
@@ -120,7 +121,14 @@ export default function CertificateForm({ patient }) {
         true,
       );
     }
-    setFormData({ ...formData, spellType: value });
+    // this is to ensure that the first certificate date remains the same for all certificates in the same spell if we have previous certificates.
+    if(previousCert.length > 0) {
+      const firstCertificateDate = previousCert[0]?.certificateDetails?.firstCertificateDate;
+      setFormData({ ...formData, spellType: value, firstCertificateDate: firstCertificateDate });
+      return;
+    }
+
+    setFormData({ ...formData, spellType: value});
   };
 
   const updateExistingCertificates = async (ipNumber) => {
@@ -253,7 +261,8 @@ export default function CertificateForm({ patient }) {
 
   const isFormValid = () => {
     if (!formData.certificateType || !formData.spellType) return false;
-    if (!formData.leaveFrom || !formData.leaveTo || !formData.leavesRequired) return false;
+    if (!formData.leaveFrom || !formData.leaveTo || !formData.leavesRequired)
+      return false;
 
     // if (rules.show.followUpDate && !formData.followUpDate) return false;
     if (rules.show.fitDate && !formData.fitDate) return false;
@@ -275,14 +284,25 @@ export default function CertificateForm({ patient }) {
 
     const leaveTo = calculateLeaveTo(leaveFrom, leaves);
     const followUpDate = calculateFollowUpDate(leaveTo, 1); // can change the number of days after which follow-up is required based on rules. for now it is one day.
+    const fitDate = calculateLeaveFrom(leaveTo, 1); // can change the number of days after which fit date is based on rules. for now it is one day after leave to date.
 
-    setFormData({
-      ...formData,
-      leavesRequired: leaves,
-      leaveFrom,
-      leaveTo,
-      followUpDate,
-    });
+    if (rules.show?.followUpDate) {
+      setFormData({
+        ...formData,
+        leavesRequired: leaves,
+        leaveFrom,
+        leaveTo,
+        followUpDate,
+      });
+    } else if (rules.show?.fitDate) {
+      setFormData({
+        ...formData,
+        leavesRequired: leaves,
+        leaveFrom,
+        leaveTo,
+        fitDate,
+      });
+    }
   };
 
   const handleLeaveFromChange = (leaveFrom) => {
@@ -378,7 +398,17 @@ export default function CertificateForm({ patient }) {
             <div className="col-md-4 my-auto">
               <button
                 className="btn btn-sm btn-esic"
-                onClick={() => setShowHistory(true)}
+                onClick={() => {
+                  if (previousCert.length === 0) {
+                    popAlert(
+                      "No previous certificates found in the current spell for this patient.",
+                      "warning",
+                      false,
+                    );
+                    return;
+                  }
+                  setShowHistory(true);
+                }}
               >
                 <TbCertificate size={20} className="mb-1" /> View Previous
                 Certificate
