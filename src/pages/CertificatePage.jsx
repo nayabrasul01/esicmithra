@@ -20,9 +20,11 @@ export default function CertificatePage() {
 
     setSearching(true);
     try {
-      // const res = await searchByIpNumber(ipNumber);
+      
       // mocking data Headers, since the staging API is not working as expected. Will remove this once the API is fixed.
       const res = await axios.get(`http://localhost:3000/LiveListData`);
+
+      // const res = await searchByIpNumber(ipNumber);
       if (res.data.success) {
         if (
           res.data.data.InsuredPersonFamilyDetails == null ||
@@ -47,7 +49,6 @@ export default function CertificatePage() {
       setSearching(false);
     } catch (err) {
       console.log(err);
-      // alert(err?.response?.data?.message);
       showToast(err?.response?.data?.message, "danger");
     } finally {
       setSearching(false);

@@ -65,25 +65,6 @@ export default function CertificateForm({ patient }) {
   // To fetch previous certificates whenever patient or certificate type changes.
   // This is required for auto-filling certain fields in case of intermediate certificates.
   useEffect(() => {
-    const fetchPrevious = async () => {
-      if (!patient) return;
-      try {
-        const res = await fetchPreviousCertificateHistory(patient.ipNumber);
-        if (res.success) {
-          setPreviousCert(res.data);
-
-          // Auto-set leaveFrom = next day of previous Leave To
-          const date = calculateLeaveFrom(res.data[0].leaveDetails.leaveTo);
-          setFormData((prev) => ({
-            ...prev,
-            leaveFrom: date,
-          }));
-        }
-      } catch (err) {
-        console.error(err);
-        showToast("Failed to fetch previous certificate history.", "danger");
-      }
-    };
     fetchPrevious();
   }, [patient, formData.certificateType]);
 
@@ -96,9 +77,30 @@ export default function CertificateForm({ patient }) {
     }));
   }, [patient]);
 
+  const fetchPrevious = async () => {
+    if (!patient) return;
+    try {
+      const res = await fetchPreviousCertificateHistory(patient.ipNumber);
+      if (res.success && res.data.length != 0) {
+        setPreviousCert(res.data);
+
+        // Auto-set leaveFrom = next day of previous Leave To
+        const date = calculateLeaveFrom(res.data[0].leaveDetails.leaveTo);
+        setFormData((prev) => ({
+          ...prev,
+          leaveFrom: date,
+        }));
+      } else {
+        showToast("No Previous history for IP.");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to fetch previous certificate history.", "danger");
+    }
+  };
+
   const handleSpellType = async (value) => {
     if (!rules.allowedSpellTypes?.includes(value)) {
-      // alert("Invalid spell type for selected certificate");
       popAlert(
         "Selected certificate type does not allow the chosen spell type. Please select a valid combination.",
         "warning",
@@ -122,13 +124,18 @@ export default function CertificateForm({ patient }) {
       );
     }
     // this is to ensure that the first certificate date remains the same for all certificates in the same spell if we have previous certificates.
-    if(previousCert.length > 0) {
-      const firstCertificateDate = previousCert[0]?.certificateDetails?.firstCertificateDate;
-      setFormData({ ...formData, spellType: value, firstCertificateDate: firstCertificateDate });
+    if (previousCert.length > 0) {
+      const firstCertificateDate =
+        previousCert[0]?.certificateDetails?.firstCertificateDate;
+      setFormData({
+        ...formData,
+        spellType: value,
+        firstCertificateDate: firstCertificateDate,
+      });
       return;
     }
 
-    setFormData({ ...formData, spellType: value});
+    setFormData({ ...formData, spellType: value });
   };
 
   const updateExistingCertificates = async (ipNumber) => {
@@ -138,7 +145,6 @@ export default function CertificateForm({ patient }) {
       if (res.success) {
         showToast("Closed all previous certificates successfully.", "success");
         setPreviousCert([]); // Clear previous cert to avoid confusion.
-        setFormData({ ...formData, spellType: value });
       }
     } catch (error) {
       showToast(

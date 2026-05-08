@@ -192,7 +192,6 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
       }
 
       if (!/^\d{6}$/.test(formData.zipCode)) {
-        // alert("Pincode must be exactly 6 digits");
         showToast("Pincode must be exactly 6 digits", "warning");
         logger.warn("Invalid pincode during UHID submission");
         return;

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { createLogger } from "../util/logger";
+import AlertModal from "../components/AlertModal";
 
 const logger = createLogger("APIClient");
 
@@ -29,10 +30,28 @@ API.interceptors.response.use(
     return response;
   },
   (error) => {
+    const errorMessage = error?.response?.data?.error; 
+    const message = error?.response?.data?.message;
+    const statusCode = error?.response?.data?.statusCode;
+
     logger.error("API error", error, {
       url: error?.config?.url,
       status: error?.response?.status,
+      statusCode: statusCode,
     });
+
+    //Only redirect on token issues
+    if (statusCode === 401 && errorMessage === "Unauthorized") {
+      // AlertModal({
+      //   show: true,
+      //   title: "Session Expired",
+      //   message: "Your current session is expired or not logged in. Please login again.",
+      //   type: "danger"
+      // });
+      alert("Your current session is expired or not logged in. Please login again.");
+      localStorage.clear();
+      window.location.href = "/";
+    }
     return Promise.reject(error);
   }
 );

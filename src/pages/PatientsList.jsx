@@ -29,7 +29,6 @@ export default function PatientsList() {
           total: response.data.data?.length ?? 0,
         });
       } else {
-        alert(response.message || "Failed to fetch patients");
         logger.warn("Patients endpoint returned failure", {
           message: response.message,
         });

@@ -99,13 +99,11 @@ const handleSearch = async (e) => {
       }
       setSearching(false);
     } catch (err) {
-      alert(err?.response?.data?.message);
       showToast(err?.response?.data?.message, "danger");
       logger.error("Dashboard search failed", err, { ipNumber });
       // navigate("/");
     } finally {
       setSearching(false);
-      logger.debug("Dashboard search completed", { ipNumber });
     }
   }
 

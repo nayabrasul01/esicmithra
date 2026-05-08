@@ -29,13 +29,6 @@ const ProtectedRoute = ({ children }) => {
       reason: token ? "expired" : "missing",
     });
     alert("Session expired or not logged in. Please login again.");
-    // <AlertModal
-    //   show={showAlert}
-    //   message={"Session expired or not logged in. Please login again."}
-    //   onClose={() => setShowAlert(false)}
-    //   showActions={false}
-    //   type="danger"
-    // />;
     localStorage.clear();
     return <Navigate to="/" />;
   }

@@ -7,7 +7,6 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import MainLayout from "./layout/MainLayout";
 import PatientsList from "./pages/PatientsList";
 import PrescriptionForm from "./pages/PrescriptionForm";
-import DraftReferral from "./pages/DraftReferral"
 import ReferralPage from "./pages/ReferralPage";
 import CertificationPage from "./pages/CertificatePage";
 
@@ -40,15 +39,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <PrescriptionForm />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/draft-referral"
-            element={
-              <ProtectedRoute>
-                <DraftReferral />
               </ProtectedRoute>
             }
           />
