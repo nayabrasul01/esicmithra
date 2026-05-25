@@ -21,7 +21,9 @@ const styles = {
   wrapper: {
     width: "100vw",      // FULL SCREEN
     minHeight: "100vh",
-    backgroundColor: "#ffffff"
+    // backgroundColor: "#ffffff"
+    // backgroundColor: "#FEFDED",
+    // background: "linear-gradient(to bottom right, #fff, #FBFAC2)"
   },
   main: {
     width: "100%",

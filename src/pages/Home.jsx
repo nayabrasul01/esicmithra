@@ -25,7 +25,7 @@ export default function DashboardHome() {
         
         {/* CARD 1 */}
         <div className="col-4">
-          <div className="card shadow-sm border-0 rounded-4 p-4 text-center">
+          <div className="card shadow-sm border-0 rounded-4 p-4 text-center text-esic">
             
             <div className="d-flex justify-content-center mb-3">
               <div
@@ -33,11 +33,11 @@ export default function DashboardHome() {
                 style={{
                   width: "80px",
                   height: "80px",
-                  border: "2px solid #9E231D",
+                  border: "2px solid #742903",
                   backgroundColor: "#f3f1b5"
                 }}
               >
-                <FaPrescription className="fs-2" color="#9E231D"/>
+                <FaPrescription className="fs-2" color="#742903"/>
               </div>
             </div>
 
@@ -47,7 +47,7 @@ export default function DashboardHome() {
             </p>
 
             <button
-              className="btn btn-primary btn-esic w-100 py-2 fw-semibold rounded-3"
+              className="btn btn-esic w-100 py-2 fw-semibold rounded-3"
               onClick={() => {
                 if(userType === 'D')
                     navigate("/ip-list");
@@ -63,7 +63,7 @@ export default function DashboardHome() {
 
         {/* CARD 2 */}
         <div className="col-4">
-          <div className="card shadow-sm border-0 rounded-4 p-4 text-center">
+          <div className="card shadow-sm border-0 rounded-4 p-4 text-center text-esic">
 
             <div className="d-flex justify-content-center mb-3">
               <div
@@ -71,12 +71,12 @@ export default function DashboardHome() {
                 style={{
                   width: "80px",
                   height: "80px",
-                  border: "2px solid #9E231D",
+                  border: "2px solid #742903",
                   backgroundColor: "#f3f1b5"
                 }}
               >
                 {/* <i className="fi fi-rr-clipboard-check text-success fs-2"></i> */}
-                <IoDocumentText className="fs-2" color="#9E231D"/>
+                <IoDocumentText className="fs-2" color="#742903"/>
               </div>
             </div>
 
@@ -87,7 +87,7 @@ export default function DashboardHome() {
             </p>
 
             <button
-              className="btn btn-success btn-esic w-100 py-2 fw-semibold rounded-3"
+              className="btn btn-esic w-100 py-2 fw-semibold rounded-3"
               onClick={() => navigate("/referral", { state: user })}
               // disabled={true}
             >
@@ -98,7 +98,7 @@ export default function DashboardHome() {
         </div>
 
         <div className="col-4">
-          <div className="card shadow-sm border-0 rounded-4 p-4 text-center">
+          <div className="card shadow-sm border-0 rounded-4 p-4 text-center text-esic">
 
             <div className="d-flex justify-content-center mb-3">
               <div
@@ -106,13 +106,13 @@ export default function DashboardHome() {
                 style={{
                   width: "80px",
                   height: "80px",
-                  border: "2px solid #9E231D",
+                  border: "2px solid #742903",
                   backgroundColor: "#f3f1b5"
                 }}
               >
                 {/* <i className="fi fi-rr-clipboard-check text-success fs-2"></i> */}
                 {/* <IoDocumentText className="text-dark fs-2" style={{color:'#9E231D'}}/> */}
-                <PiCertificateBold className="fs-2" color="#9E231D" />
+                <PiCertificateBold className="fs-2" color="#742903" />
 
               </div>
             </div>
@@ -123,8 +123,8 @@ export default function DashboardHome() {
             </p>
 
             <button
-              className="btn btn-success btn-esic w-100 py-2 fw-semibold rounded-3"
-              onClick={() => navigate("/create-certificate", { state: user })}
+              className="btn btn-esic w-100 py-2 fw-semibold rounded-3"
+              onClick={() => navigate("/medical-certificate", { state: user })}
               // disabled={true}
             >
               <i className="fi fi-rr-list-check me-2"></i>

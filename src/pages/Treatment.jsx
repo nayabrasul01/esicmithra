@@ -6,6 +6,7 @@ import { MdErrorOutline } from "react-icons/md";
 import CreateUHIDModal from "../components/CreateUHIDModal";
 import ReferralModal from "../components/ReferralModal"
 import { createLogger } from "../util/logger";
+import { useAlert } from "../components/alert/AlertContext";
 
 import {
     getDashboardData,
@@ -19,6 +20,7 @@ import {
 const logger = createLogger("TreatmentController");
 
 const Treatment = () => {
+    const { alert, confirm } = useAlert();
     const { state: patient } = useLocation();
     const [prevData, setPrevData] = useState(null);
     const user = JSON.parse(localStorage.getItem("user"));
@@ -92,11 +94,12 @@ const Treatment = () => {
             logger.warn("Attempted to submit treatment without UHID", {
                 name: patient?.name,
             });
-            showToast("No UHID found for the dependent. please create uHID first and then try again.", "warning");
+            // showToast("No UHID found for the dependent. please create uHID first and then try again.", "warning");
+            await alert("No UHID found for the dependent. please create uHID first and then try again.", "warning");
             return;
         }
         
-        if(!confirm(`Are you sure you want to create treatment plan for \n${patient.name} - ${patient.uHID} ?`)){
+        if(!await confirm(`Are you sure you want to create treatment plan for \n${patient.name} - ${patient.uHID} ?`)){
             logger.info("Treatment submission cancelled by user", {
                 uhid: patient?.uHID,
             });
@@ -120,7 +123,7 @@ const Treatment = () => {
             age: calculateAge(patient.dob),
             dob: dob,
             state: patient.residingState,
-            locationID: user.locationId
+            locationId: user?.location?.id
             // doctorUserId: userId,
             // ...form
             // clinicalData: {...form}
@@ -150,20 +153,23 @@ const Treatment = () => {
                 
                 setSavedId(res.data.data.id);
                 setSubmittedData(res.data.data);
-                showToast(`Created treatment entry and generated prescription for ${payload.uhid}`, "success");
+                // showToast(`Created treatment entry and generated prescription for ${payload.uhid}`, "success");
+                await alert(`Created treatment entry and generated prescription for ${payload.uhid}`, "success");
                 // navigate("/dashboard")
             } else {
                 logger.warn("Treatment save API returned failure", {
                     uhid: payload.uhid,
                     message: res.data.message,
                 });
-                showToast(`Failed to save treatment.\n Reason: ${res.data.message}`, "danger");
+                // showToast(`Failed to save treatment.\n Reason: ${res.data.message}`, "danger");
+                await alert(`Failed to save treatment.\n Reason: ${res.data.message}`, "danger");
             }
         } catch (error) {
             logger.error("Treatment flow failed", error, {
                 uhid: payload.uhid,
             });
-            showToast("Failed to save treatment. Reason: " + error?.response?.data?.message || error.message || "An error occurred while saving treatment", "danger")
+            // showToast("Failed to save treatment. Reason: " + error?.response?.data?.message || error.message || "An error occurred while saving treatment", "danger")
+            await alert("Failed to save treatment. Reason: " + error?.response?.data?.message || error.message || "An error occurred while saving treatment", "danger")
         }finally{
             setLoading(false);
         }
@@ -172,7 +178,7 @@ const Treatment = () => {
     const handleReferral = () => {
 
         if(!patient.uHID){
-            showToast("No UHID found for the dependent. please create uHID first and then try again.", "warning");
+            alert("No UHID found for the dependent. please create uHID first and then try again.", "warning");
             return;
         }
 
@@ -190,13 +196,15 @@ const Treatment = () => {
                 fileName: file?.name,
             });
             const res = await uploadFile(treatmentId,file);
-            showToast(res.data.message, "success");
+            // showToast(res.data.message, "success");
+            await alert(res.data.message, "success");
             fetchHistory(); // refresh table
         }catch(e){
             logger.error("Treatment attachment upload failed", e, {
                 treatmentId,
             });
-            showToast(e.response.data.message, "danger")
+            // showToast(e.response.data.message, "danger")
+            await alert(e.response.data.message, "danger")
         }
     }
 
@@ -216,10 +224,12 @@ const Treatment = () => {
                 filename = disposition.split("filename=")[1].replaceAll('"', "").trim();
             }
             createFileLink(blob, filename);
-            showToast("File downloaded successfully", "success");
+            // showToast("File downloaded successfully", "success");
+            await alert("File downloaded successfully", "success");
         } catch (error) {
             logger.error("Download failed", error, { docId, fileType });
-            showToast(error?.response?.data?.message || error.message || "Download failed", "danger");
+            // showToast(error?.response?.data?.message || error.message || "Download failed", "danger");
+            await alert(error?.response?.data?.message || error.message || "Download failed", "danger");
         }
     }
 

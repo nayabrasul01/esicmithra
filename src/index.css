@@ -159,6 +159,17 @@ button:focus-visible {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
+/* When the radio is checked */
+.form-check-input:checked {
+    background-color: #742902;
+    border-color: #742902;
+}
+
+/* When the radio is focused (the glow effect) */
+.form-check-input:focus {
+    border-color: #742902;
+    box-shadow: 0 0 0 0.25rem #FBFAC2;
+}
 
 @media (max-width: 576px) {
   .emitra-icon {

@@ -6,12 +6,13 @@ import PatientPhotoUpload from "../components/PatientPhotoUpload";
 
 import { FaHospitalUser } from "react-icons/fa";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { useAlert } from "./../components/alert/AlertContext";
 
 
 import { calculateAge } from "../util/utilities";
 
 const ReferralModal = ({ show, onClose, user, referral, patient }) => {
-
+  const { alert, confirm } = useAlert();
   const isDoctor = user?.type === "D";
   const [loader, setLoader] = useState(false);
 
@@ -26,7 +27,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
       patientPhotoId: "",
       attendantName: "",
       attendantRelation: "",
-      locationId: user?.locationId || ""
+      locationId: user?.location?.id || ""
     },
     referralDetails:{
       referralNature: "",
@@ -108,7 +109,8 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
           }
         }
       } catch (error) {
-        showToast(error, "danger");
+        // showToast(error, "danger");
+        await alert(error, "danger");
       } finally {
         setLoader(false);
       }
@@ -147,16 +149,19 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
     try {
       const response = await createReferralRequest(updatedFormData);
       if (response.success) {
-        showToast(
-          `Referral request created successfully. Referral ID: ${response.data}`,
-          "success"
-        );
+        // showToast(
+        //   `Referral request created successfully. Referral ID: ${response.data}`,
+        //   "success"
+        // );
+        await alert(`Referral request created successfully. Referral ID: ${response.data}`, "success");
         onClose();
       } else {
-        showToast(response.message || "Failed to create referral", "danger");
+        // showToast(response.message || "Failed to create referral", "danger");
+        await alert(response.message || "Failed to create referral", "danger");
       }
     } catch (error) {
-      showToast(error.message || "Error creating referral", "danger");
+      // showToast(error.message || "Error creating referral", "danger");
+      await alert(error.message || "Error creating referral", "danger");
     }
   };
 
@@ -218,14 +223,14 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
         age: calculateAge(patient.dob),
         dob: dob,
         state: patient.residingState,
-        locationID: user.locationId
+        locationId: user?.location?.id
       }
     };
 
     return newData;
   };
   
-  const handleApprove = async () => {
+  const handlePartialApprove = async () => {
 
     const updatedFormData = addPatientData(formData);
     setFormData(updatedFormData);
@@ -239,7 +244,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
     console.log(updatedFormData);
     
 
-    if(!confirm(`Are you sure you want to partially approve this referral ${formData.referralId} ?`)) return;
+    if(!(await confirm(`Are you sure you want to partially approve this referral ${formData.referralId} ?`))) return;
     
     
     try {
@@ -248,10 +253,12 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
       // const res = await updateStatus(formData.referralId, 'PARTIAL_APPROVED', user.userId)
       // await handleSubmit("PARTIAL_APPROVED");
       if(res.success)
-        showToast(`Referral request with Referral ID: ${formData.referralId} partially approved`, "success");
+        // showToast(`Referral request with Referral ID: ${formData.referralId} partially approved`, "success");
+        await alert(`Referral request with Referral ID: ${formData.referralId} partially approved`, "success");
       onClose();
     } catch (error) {
-      console.log(`Error when upadting status : ${error}.`, "danger");
+      // showToast(`Error when upadting status : ${error}.`, "danger");
+      await alert(`Error when upadting status : ${error}.`, "danger");
     }finally{
       setLoader(false);
     }
@@ -259,11 +266,12 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
 
   const handleReject = async () => {
     if (!formData?.referralId) {
-      showToast("Referral details are missing. Please reopen the request.", "danger");
+      // showToast("Referral details are missing. Please reopen the request.", "danger");
+      await alert("Referral details are missing. Please reopen the request.", "danger");
       return;
     }
 
-    if (!confirm(`Are you sure you want to reject referral ${formData.referralId}?`)) {
+    if (!(await confirm(`Are you sure you want to reject referral ${formData.referralId}?`))) {
       return;
     }
 
@@ -271,13 +279,16 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
       setLoader(true);
       const res = await updateStatus(formData.referralId, "REJECTED", user.userId);
       if (res?.success) {
-        showToast(`Referral request ${formData.referralId} rejected`, "success");
+        // showToast(`Referral request ${formData.referralId} rejected`, "success");
+        await alert(`Referral request ${formData.referralId} rejected`, "success");
       } else {
-        showToast("Referral rejection completed", "success");
+        // showToast("Referral rejection completed", "success");
+        await alert("Referral rejection completed", "success");
       }
       onClose();
     } catch (error) {
-      showToast(error?.response?.data?.message || error.message || "Failed to reject referral", "danger");
+      // showToast(error?.response?.data?.message || error.message || "Failed to reject referral", "danger");
+      await alert(error?.response?.data?.message || error.message || "Failed to reject referral", "danger");
     } finally {
       setLoader(false);
     }
@@ -697,7 +708,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
               <>
                 <button
                   className="btn btn-esic"
-                  onClick={handleApprove}
+                  onClick={handlePartialApprove}
                 >
                 Partial Approve
                 </button>

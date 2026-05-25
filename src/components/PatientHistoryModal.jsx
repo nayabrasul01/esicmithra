@@ -108,7 +108,7 @@ const createFileLink = (blob, filename) => {
   return (
     <>
       <div className="modal fade show d-block font-esic" tabIndex="-1">
-        <div className="modal-dialog modal-xl modal-dialog-scrollable">
+        <div className="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
           <div className="modal-content shadow-lg border-0">
 
             {/* Header */}

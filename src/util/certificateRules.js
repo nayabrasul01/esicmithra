@@ -2,12 +2,12 @@ export const CERTIFICATE_TYPES = {
   FIRST: "FIRST",
   FIRST_FINAL: "FIRST_FINAL",
   INTERMEDIATE: "INTERMEDIATE",
-  FINAL: "FINAL"
+  FINAL: "FINAL",
 };
 
 export const SPELL_TYPES = {
   FRESH: "FRESH",
-  ONGOING: "ONGOING"
+  ONGOING: "ONGOING",
 };
 
 // certificateRules.js
@@ -19,8 +19,8 @@ export const CERTIFICATE_RULES = {
       fitDate: true,
       followUpDate: false,
       hospitalization: true,
-      issueDate: true
-    }
+      issueDate: true,
+    },
   },
 
   FIRST: {
@@ -30,8 +30,8 @@ export const CERTIFICATE_RULES = {
       fitDate: false,
       followUpDate: true,
       hospitalization: true,
-      issueDate: true
-    }
+      issueDate: true,
+    },
   },
 
   INTERMEDIATE: {
@@ -41,8 +41,8 @@ export const CERTIFICATE_RULES = {
       fitDate: false,
       followUpDate: true,
       hospitalization: true,
-      issueDate: true
-    }
+      issueDate: true,
+    },
   },
 
   SPECIAL_INTERMEDIATE: {
@@ -52,8 +52,8 @@ export const CERTIFICATE_RULES = {
       fitDate: false,
       followUpDate: true,
       hospitalization: true,
-      issueDate: true
-    }
+      issueDate: true,
+    },
   },
 
   FINAL: {
@@ -63,7 +63,30 @@ export const CERTIFICATE_RULES = {
       fitDate: true,
       followUpDate: false,
       hospitalization: true,
-      issueDate: true
-    }
-  }
+      issueDate: true,
+    },
+  },
 };
+
+export const MATERNITY_CERTIFICATION_OPTIONS = [
+  {
+    label: "Certificate of expected confinement (Form 18)",
+    value: "EXPECTED_CONFINEMENT",
+    enabled: true,
+  },
+  {
+    label: "Certificate of confinement (Form 18)",
+    value: "CONFINEMENT",
+    enabled: false,
+  },
+  {
+    label: "Certificate of Miscarriage/MTP (Form 18)",
+    value: "MISCARRIAGE",
+    enabled: false,
+  },
+  {
+    label: "Certificate of pregnancy (Form 17)",
+    value: "PREGNANCY",
+    enabled: false,
+  },
+];

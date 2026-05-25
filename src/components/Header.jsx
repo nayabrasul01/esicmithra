@@ -4,17 +4,18 @@ import logo from "./../assets/esic_header_logo.jpg";
 import indiaGovSymbol from "./../assets/India_gov_symbol_header.png";
 import { MdLocalHospital } from "react-icons/md";
 import { TbLogout2 } from "react-icons/tb";
+import { FaUserDoctor } from "react-icons/fa6";
 import { showToast } from "../util/toastUtil";
-import LoadingSpinner from "./LoadingSpinner"
+import LoadingSpinner from "./LoadingSpinner";
 
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = React.useState(false);
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const hideLogout =
-  location.pathname === "/login" || location.pathname === "/";
-
+    location.pathname === "/login" || location.pathname === "/";
 
   const logout = () => {
     localStorage.clear();
@@ -25,7 +26,6 @@ const Header = () => {
       showToast("Logged out successfully.", "info");
       navigate("/");
     }, 1000);
-    
   };
 
   return (
@@ -52,7 +52,7 @@ const Header = () => {
           <img
             src={logo}
             alt="ESIC Logo"
-            style={{ height: "75px", objectFit: "contain", cursor: 'pointer' }}
+            style={{ height: "75px", objectFit: "contain", cursor: "pointer" }}
             onClick={() => navigate("/home")}
           />
         </a>
@@ -75,43 +75,64 @@ const Header = () => {
       <hr style={{ margin: 0, borderTop: "1px solid black" }} />
 
       {/* ---------- ROW 2 ---------- */}
-      
-        <div
-          className="emitra-title"
-          style={{
-            position: "relative",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "8px 0",
-          }}
-        >
-          {/* Center Title */}
-          <MdLocalHospital className="emitra-icon" />
-          <h3 className="emitra-text">
-            <span className="emitra-e">CHC-PHC</span>
-          </h3>
 
-          {/* Right Logout Button */}
-          {!hideLogout && (
+      <div
+        className="emitra-title"
+        style={{
+          position: "relative",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "8px 0",
+          backgroundColor: "#fbfac2",
+        }}
+      >
+        {/* Center Title */}
+        <MdLocalHospital className="emitra-icon" />
+        <h3 className="emitra-text">
+          <span className="emitra-e">CHC-PHC</span>
+        </h3>
+
+        {/* Right Logout Button */}
+        {!hideLogout && (
+          <div
+            style={{
+              position: "absolute",
+              right: "15px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+            }}
+          >
+            <span className="text-esic fw-bold">
+              <FaUserDoctor size={20} /> &nbsp; {user?.location?.description || "" }
+            </span>
             <button
-              className="btn btn-danger btn-esic position-absolute"
+              className="btn btn-danger btn-esic"
               style={{
-                position: "absolute",
-                right: "15px",
-                top: "50%",
-                transform: "translateY(-50%)",
                 fontSize: "14px",
               }}
               onClick={logout}
               aria-label="Logout"
             >
-            {loading ? <div className="spinner-border spinner-border-sm" role="status"></div> : ""} Logout <TbLogout2 />
+              <div className="d-flex align-items-center">
+                {loading ? (
+                  <div
+                    className="spinner-border spinner-border-sm"
+                    role="status"
+                  ></div>
+                ) : (
+                  <span>
+                    &nbsp;Logout <TbLogout2 size={20} />
+                  </span>
+                )}
+              </div>
             </button>
-          )}
-        </div>
-
-
+          </div>
+        )}
+      </div>
     </div>
   );
 };

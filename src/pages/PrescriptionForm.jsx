@@ -7,6 +7,7 @@ import { MdCancel } from "react-icons/md";
 import { FaHistory } from "react-icons/fa";
 import PatientHistoryModal from "../components/PatientHistoryModal"
 import { createLogger } from "../util/logger";
+import { useAlert } from "../components/alert/AlertContext";
 
 const logger = createLogger("PrescriptionController");
 
@@ -14,6 +15,7 @@ const logger = createLogger("PrescriptionController");
 const PrescriptionForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { alert, confirm } = useAlert();
 
   const patient = location?.state?.patient;
   const user = JSON.parse(localStorage.getItem("user"));
@@ -44,13 +46,18 @@ const PrescriptionForm = () => {
   const [historyLoading, setHistoryLoading] = React.useState(false);
 
 
-  const canSubmit =
-    (!!patient &&
-    (clinical.symptoms || "").trim().length > 0 &&
-    (clinical.examFindings || "").trim().length > 0 &&
-    (clinical.bp || "").trim().length > 0 &&
-    (clinical.pulseRate || "").trim().length > 0 &&
-    (clinical.diagnosis || "").trim().length > 0) || (file !== null && clinical.remarks.trim().length > 0);
+  const [canSubmit, setCanSubmit] = useState(false);
+
+  useEffect(() => {
+    setCanSubmit(
+      (!!patient &&
+        (clinical.symptoms || "").trim().length > 0 &&
+        (clinical.examFindings || "").trim().length > 0 &&
+        (clinical.bp || "").trim().length > 0 &&
+        (clinical.pulseRate || "").trim().length > 0 &&
+        (clinical.diagnosis || "").trim().length > 0) || (file !== null && clinical.remarks.trim().length > 0)
+    );
+  }, [patient, clinical, file]);
 
   const fileInputRef = React.useRef(null);
 
@@ -141,7 +148,8 @@ const PrescriptionForm = () => {
             patientId: patient.id,
           });
           setSaving(false);
-          showToast("Prescription not saved as there is no treatment record created earlier. Please create prescription and try again.", "warning");
+          // showToast("Prescription not saved as there is no treatment record created earlier. Please create prescription and try again.", "warning");
+          await alert("Prescription not saved as there is no treatment record created earlier. Please create prescription and try again.", "warning");
         }
       } 
     }catch (error) {
@@ -149,7 +157,8 @@ const PrescriptionForm = () => {
       logger.error("Document upload failed before submission", error, {
         patientId: patient?.id,
       });
-      showToast("Error uploading file: " + error.message, "error");
+      // showToast("Error uploading file: " + error.message, "error");
+      await alert("Error uploading file: " + error.message, "error");
     }finally{
       navigate("/ip-list");
       logger.debug("Navigated to IP list after upload attempt", {
@@ -193,7 +202,8 @@ const PrescriptionForm = () => {
       const response = await savePrescription(payload);
       if(response.data.success){
         setSaving(false);
-        showToast("Prescription saved successfully!", "success");
+        // showToast("Prescription saved successfully!", "success");
+        await alert("Prescription saved successfully!", "success");
         navigate("/ip-list");
         logger.info("Prescription save succeeded", {
           patientId: payload.patientId,
@@ -209,7 +219,8 @@ const PrescriptionForm = () => {
       logger.error("Prescription save failed", error, {
         patientId: payload.patientId,
       });
-      showToast("Error saving prescription." + error, "error");
+      // showToast("Error saving prescription." + error, "error");
+      await alert("Error saving prescription." + error, "error");
     }
   };
 
@@ -225,7 +236,7 @@ const PrescriptionForm = () => {
           logger.error("Upload failed inside helper", e, {
             treatmentId,
           });
-          showToast(e.response.data.message, "danger")
+          showToast(e.response.data.message, "danger");
       }
   }
 
@@ -246,7 +257,8 @@ const PrescriptionForm = () => {
       }
     } catch (error) {
       logger.error("Error fetching history", error, { uhid: patient.uhid });
-      showToast("Error fetching history:" + error, "danger")
+      // showToast("Error fetching history:" + error, "danger")
+      await alert("Error fetching history:" + error, "danger");
     } finally {
       setHistoryLoading(false);
     }

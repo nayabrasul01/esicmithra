@@ -6,7 +6,7 @@ const logger = createLogger("MedicalCertificateService");
 
 export const createMedicalCertificate = async (payload) => {
   try {
-    const res = await API.post("/certificates/create", payload);
+    const res = await API.post("/medical-certificates/sick/create", payload);
     logger.info("Medical certificate created successfully", {
       referralId: res?.data,
       responseMessage: res?.data?.message,
@@ -20,9 +20,23 @@ export const createMedicalCertificate = async (payload) => {
   }
 };
 
+export const createMedicalMaternityCertificate = async (payload) => {
+  try {
+    const res = await API.post("/medical-certificates/maternity/create", payload);
+    return res.data;
+  } catch (error) {
+    // logger.error("Creating medical certificate failed", error, {
+    //   ipNumber: payload?.patient?.ipNumber,
+    // });
+    throw error;
+  }
+};
+
 export const fetchPreviousCertificateHistory = async (ipNumber) => {
   try {
-    const res = await API.get(`/certificates/previous-history/${ipNumber}`);
+    const res = await API.get(
+      `/medical-certificates/previous-history/ipNumber/${ipNumber}`,
+    );
     return res.data;
   } catch (error) {
     logger.error("Error fetching previous certificate history", error);
@@ -32,7 +46,7 @@ export const fetchPreviousCertificateHistory = async (ipNumber) => {
 
 export const closePreviousInProgressCertificate = async (ipNumber) => {
   try {
-    const res = await API.put(`/certificates/close-all/${ipNumber}`);
+    const res = await API.put(`/medical-certificates/close-all/${ipNumber}`);
     return res.data;
   } catch (error) {
     logger.error("Error closing previous in-progress certificate", error, {
@@ -40,4 +54,46 @@ export const closePreviousInProgressCertificate = async (ipNumber) => {
     });
     throw error;
   }
-}
+};
+
+export const generateCertificate = async (payload) => {
+  try {
+    const res = await API.post("/medical-certificates/generate", payload, {
+      responseType: "blob",
+    });
+    return res.data;
+  } catch (error) {
+    logger.error("Error generating certificate", error, {
+      certificateId: payload?.id,
+      certificateNumber: payload?.certificateNumber,
+    });
+    return { success: false, error };
+  }
+};
+
+export const downloadFile = async (id) => {
+  try {
+    const res = await API.get(`/medical-certificates/download?id=${id}`, {
+      responseType: "blob",
+    });
+    return res.data;
+  } catch (error) {
+    logger.error("Error generating certificate", error, {
+      certificateId: id
+    });
+    throw error;
+  }
+};
+
+export const fetchCertificatesByLocation = async (locationId) => {
+  try {
+    const res = await API.get(`/medical-certificates/previous-history/location/${locationId}`);
+    return res.data;
+  } catch (error) {
+    logger.error("Error fetching certificates by location", error, {
+      locationId,
+    });
+    throw error;
+  }
+};
+

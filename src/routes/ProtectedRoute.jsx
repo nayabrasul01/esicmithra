@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { createLogger } from "../util/logger";
-// import AlertModal from "../components/AlertModal";
+import { useAlert } from "../components/alert/AlertContext";
 
 const logger = createLogger("ProtectedRoute");
-// const [showAlert, setShowAlert] = useState(false);
 
 const isTokenExpired = (token) => {
   try {
@@ -18,7 +17,9 @@ const isTokenExpired = (token) => {
 };
 
 const ProtectedRoute = ({ children }) => {
+  const { alert } = useAlert();
   const location = useLocation();
+
   const token = localStorage.getItem("session");
   if (token && !isTokenExpired(token)) {
     logger.debug("Route access granted", { path: location.pathname });
@@ -28,7 +29,7 @@ const ProtectedRoute = ({ children }) => {
       path: location.pathname,
       reason: token ? "expired" : "missing",
     });
-    alert("Session expired or not logged in. Please login again.");
+    alert("Session expired or not logged in. Please login again.", "warning")
     localStorage.clear();
     return <Navigate to="/" />;
   }

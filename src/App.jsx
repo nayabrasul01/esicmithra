@@ -8,12 +8,13 @@ import MainLayout from "./layout/MainLayout";
 import PatientsList from "./pages/PatientsList";
 import PrescriptionForm from "./pages/PrescriptionForm";
 import ReferralPage from "./pages/ReferralPage";
-import CertificationPage from "./pages/CertificatePage";
+import CreateMedicalCertification from "./pages/CreateMedicalCertification";
+import MedicalCertificatePage from "./pages/MedicalCertificatePage";
 
 function App() {
   return (
     <BrowserRouter>
-    <MainLayout>
+      <MainLayout>
         <Routes>
           <Route path="/" element={<Login />} />
 
@@ -24,8 +25,7 @@ function App() {
                 <Home />
               </ProtectedRoute>
             }
-          >
-          </Route> 
+          ></Route>
           <Route
             path="/ip-list"
             element={
@@ -74,11 +74,19 @@ function App() {
             path="/create-certificate"
             element={
               <ProtectedRoute>
-                <CertificationPage />
+                <CreateMedicalCertification />
               </ProtectedRoute>
             }
           />
 
+          <Route
+            path="/medical-certificate"
+            element={
+              <ProtectedRoute>
+                <MedicalCertificatePage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </MainLayout>
     </BrowserRouter>

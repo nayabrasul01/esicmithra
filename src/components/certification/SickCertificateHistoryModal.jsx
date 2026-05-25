@@ -1,12 +1,45 @@
 import { useState } from "react";
+import { FaDownload, FaSearch } from "react-icons/fa";
+import { downloadFile } from "../../services/medicalCertificateService";
+import { showToast } from "../../util/toastUtil";
+import { createFileLink } from "../../util/utilities";
 
-export default function CertificateHistoryModal({
+import { createLogger } from "../../util/logger";
+
+const logger = createLogger("MedicalCertificate");
+
+export default function SickCertificateHistoryModal({
   show,
   patient,
   patientHistory = [],
   onClose,
 }) {
   const [expandedId, setExpandedId] = useState(null);
+
+  const download = async (id) => {
+    try {
+      const response = await downloadFile(id);
+      const blob = new Blob(
+        [response],
+        {
+          // type: response.headers["content-type"]
+          type: "application/pdf",
+        }, // 👈 important
+      );
+      createFileLink(blob, "medical_certificate.pdf");
+      showToast("File downloaded successfully", "success");
+    } catch (error) {
+      logger.error("Medical certificate download failed", error, {
+        id
+      });
+      showToast(
+        error?.response?.data?.message ||
+          error.message ||
+          "Medical certificate not found, download failed",
+        "danger",
+      );
+    }
+  };
 
   if (!show) return null;
 
@@ -17,7 +50,7 @@ export default function CertificateHistoryModal({
           <div className="modal-content">
             {/* Header */}
             <div className="modal-header">
-              <h5 className="modal-title">Ongoing Certificate History</h5>
+              <h5 className="modal-title">Ongoing Spell History</h5>
               <button className="btn-close" onClick={onClose}></button>
             </div>
 
@@ -140,6 +173,21 @@ export default function CertificateHistoryModal({
                           <div className="mt-2">
                             <strong>Remarks:</strong>{" "}
                             {cert.leaveDetails?.remarks?.remarks || "-NA-"}
+                          </div>
+
+                          <div className="mt-2">
+                            
+                            <a
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn btn-sm btn-esic btn-outline-primary"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                download(cert.id);
+                              }}
+                            >
+                              <FaDownload size={12} />&nbsp; <strong>Download</strong>
+                            </a>
                           </div>
                         </div>
                       )}

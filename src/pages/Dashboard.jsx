@@ -5,6 +5,8 @@ import { searchByIpNumber, verifyAltcha } from "../services/authService";
 import { validateCaptcha } from "../services/dashboardService"
 import { showToast } from '../util/toastUtil';
 import { createLogger } from "../util/logger";
+import { useAlert } from "./../components/alert/AlertContext";
+import axios from "axios";
 
 import 'altcha';
 import "altcha/themes/business.css";
@@ -13,6 +15,7 @@ const logger = createLogger("DashboardController");
 
 const Dashboard = () => {
   const formRef = useRef(null);
+  const { alert, confirm } = useAlert();
 
   const [userData, setUserData] = useState(null);
   const userId = localStorage.getItem("userId");
@@ -35,7 +38,7 @@ const handleSearch = async (e) => {
   const form = formRef.current;
   const isCaptchaReady = !!form.querySelector('input[name="altcha"]')?.value;
   if(!isCaptchaReady) {
-    showToast("Captcha is not ready yet. Please wait a moment and try again.", "warning");
+    await alert("Captcha is not ready yet. Please wait a moment and try again.", "warning");
     return;
   }
   // ALTCHA automatically injects hidden input
@@ -62,8 +65,8 @@ const handleSearch = async (e) => {
     const res = await verifyAltcha(altchaPayload);
 
       if(res.data.verified){
-      const res = await searchByIpNumber(ipNumber);
-
+      // const res = await searchByIpNumber(ipNumber);
+        const res = await axios.get(`http://localhost:3000/LiveListData`);
       if (res.data.success) {
         if(res.data.data.InsuredPersonFamilyDetails == null 
           || res.data.data.personalDetails == null){
@@ -99,7 +102,8 @@ const handleSearch = async (e) => {
       }
       setSearching(false);
     } catch (err) {
-      showToast(err?.response?.data?.message, "danger");
+      // showToast(err?.response?.data?.message, "danger");
+      await alert("An error occurred while fetching IP details. Error: " + (err?.response?.data?.message || err.message), "danger");
       logger.error("Dashboard search failed", err, { ipNumber });
       // navigate("/");
     } finally {
@@ -120,14 +124,15 @@ const handleSearch = async (e) => {
 return (
   <div className="container font-esic">
 
-    {!searching && list.length === 0 && (
+    {/* {!searching && list.length === 0 && (
       <div className="alert alert-warning">
         Enter a 10-digit IP number and click Search to see member details.
       </div>
-    )}
+    )} */}
 
-    <div className="position-relative mb-3">
-      <h3>Insured Person (IP) Details</h3>
+    <div className="position-relative mb-3 d-flex align-items-center gap-3">
+      <h3 className="mb-0">Insured Person (IP) Details</h3>
+      <p className="mb-0 text-muted"><span style={{color: "red"}}>*</span> Enter a 10-digit IP number and click Search to see member details.</p>
     </div>
 
     <form ref={formRef} onSubmit={handleSearch}>

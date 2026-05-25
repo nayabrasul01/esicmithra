@@ -56,9 +56,9 @@ export const fetchICDCode = async (conceptId) => {
   }
 }
 
-export const fetchReferrals = async (locationId) => {
+export const fetchReferrals = async (id) => {
   try {
-    const res = await API.get(`/referrals/location?locationId=${locationId}`);
+    const res = await API.get(`/referrals/location?locationId=${id}`);
     return res.data;
   } catch (error) {
     logger.error("Fetching referrals failed", error);
