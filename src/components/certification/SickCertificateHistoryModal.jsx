@@ -49,7 +49,7 @@ export default function SickCertificateHistoryModal({
         <div className="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
           <div className="modal-content">
             {/* Header */}
-            <div className="modal-header">
+            <div className="modal-header text-esic">
               <h5 className="modal-title">Ongoing Spell History</h5>
               <button className="btn-close" onClick={onClose}></button>
             </div>

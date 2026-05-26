@@ -228,8 +228,6 @@ export default function SickCertificateForm({ patient }) {
 
       const res = await createMedicalCertificate(payload);
       if (res.success) {
-        await alert("Certificate created & generated successfully.", "success");
-
         payload.certificateNumber = res.data.certificateNumber;
         payload.id = res.data.id;
         const response = await generateCertificate(payload);
@@ -269,7 +267,7 @@ export default function SickCertificateForm({ patient }) {
         // setPreviousCert(res.data); // to ensure history modal shows the newly created certificate when opened immediately after creation
       } else {
         await alert(
-          "Failed to create certificate. Please try again.",
+          `Failed to create certificate. Please try again.`,
           "danger",
         );
       }
@@ -685,7 +683,7 @@ export default function SickCertificateForm({ patient }) {
                 {/* Disease Diagnosis */}
                 <div className="col-md-6">
                   <label className="form-label ">Disease(s) / Diagnosis</label>
-                  {/* <textarea
+                  <textarea
                       className="form-control"
                       rows={2}
                       value={formData.diseaseDiagnosis}
@@ -695,16 +693,16 @@ export default function SickCertificateForm({ patient }) {
                           diseaseDiagnosis: e.target.value,
                         })
                       }
-                    /> */}
+                    />
 
-                  <SnomedSearch
+                  {/* <SnomedSearch
                     onSelect={(data) => {
                       setFormData({
                         ...formData,
                         diseaseDiagnosis: data.snomedDiagnosis,
                       });
                     }}
-                  />
+                  /> */}
                 </div>
 
                 {/* Disease Remarks */}
