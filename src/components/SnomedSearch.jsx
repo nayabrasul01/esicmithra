@@ -2,16 +2,27 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { fetchSnomed, fetchICDCode } from "../services/referralService";
 import { showToast } from "../util/toastUtil";
+import { useAlert } from "./../components/alert/AlertContext";
 
-const SnomedSearch = ({ onSelect }) => {
+const SnomedSearch = ({ onSelect, initialValue }) => {
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { alert, confirm } = useAlert();
 
   const debounceRef = useRef(null);
   const skipSearchRef = useRef(false);
+  // const isInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (initialValue && initialValue !== query) {
+      skipSearchRef.current = true;
+      setQuery(initialValue);
+      // isInitializedRef.current = true;
+    }
+  }, [initialValue]);
 
   useEffect(() => {
 
@@ -19,6 +30,10 @@ const SnomedSearch = ({ onSelect }) => {
       skipSearchRef.current = false;
       return;
     }
+
+    // if (!isInitializedRef.current) {
+    //   return;
+    // }
 
     if (query.length < 3) {
       setResults([]);
@@ -58,7 +73,11 @@ const SnomedSearch = ({ onSelect }) => {
         res.data?.mapGroup?.[0]?.mappedICDCode || "";
 
       if(icdCode === "")
-        showToast("No ICD code found for the given SNOMED CT search. Please try with other terms.", "warning");
+        // showToast("No ICD code found for the given SNOMED CT search. Please try with other terms.", "warning");
+      await alert(
+        "No ICD code found for the given SNOMED CT search. Please try with other terms.",
+        "warning",
+      );
 
       onSelect({
         snomedDiagnosis: term,
@@ -82,7 +101,7 @@ const SnomedSearch = ({ onSelect }) => {
       <input
         type="text"
         className="form-control"
-        placeholder="Search SNOMED CT diagnosis..."
+        placeholder={"Search SNOMED CT diagnosis..."}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />

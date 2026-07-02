@@ -65,8 +65,8 @@ const handleSearch = async (e) => {
     const res = await verifyAltcha(altchaPayload);
 
       if(res.data.verified){
-      // const res = await searchByIpNumber(ipNumber);
-        const res = await axios.get(`http://localhost:3000/LiveListData`);
+      const res = await searchByIpNumber(ipNumber);
+        // const res = await axios.get(`http://localhost:3000/LiveListData`);
       if (res.data.success) {
         if(res.data.data.InsuredPersonFamilyDetails == null 
           || res.data.data.personalDetails == null){
@@ -81,13 +81,14 @@ const handleSearch = async (e) => {
           const selfMember = {
             name: res.data.data.personalDetails[0].name,
             relationship: "Self",
+            relatedToName: res.data.data.personalDetails[0].name,
             dob: res.data.data.personalDetails[0].dateOfBirth,
             sex: res.data.data.personalDetails[0].sex,
             residingState: res.data.data.AddressDetails[0].address1,
             marstatus: res.data.data.personalDetails[0].maritalStatus,
             uHID:res.data.data.uHID
           };
-            setList(prevList => [selfMember,...prevList]);
+            setList(prevList => [selfMember, ...prevList.map(item => ({ ...item, relatedToName: selfMember.name }))]);
             logger.info("Dashboard search returned records", {
               ipNumber,
               totalMembers: (res.data.data.InsuredPersonFamilyDetails || []).length + 1,

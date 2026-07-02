@@ -176,6 +176,7 @@ const PrescriptionForm = () => {
       state: patient.state,
       ipNumber: patient.ipNumber,
       doctorUserId: user.userId,
+      locationId: user?.location?.id,
 
       clinicalData:{
         symptoms: clinical.symptoms,

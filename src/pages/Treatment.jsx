@@ -119,6 +119,7 @@ const Treatment = () => {
             uhid: patient.uHID,
             name: patient.name,
             relationship: patient.relationship,
+            relatedToName: patient.relatedToName,
             gender: patient.sex,
             age: calculateAge(patient.dob),
             dob: dob,

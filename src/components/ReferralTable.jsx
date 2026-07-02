@@ -10,6 +10,7 @@ import { RiErrorWarningFill } from "react-icons/ri";
 import { IoCreateOutline } from "react-icons/io5";
 
 import LoadingSpinner from "../components/LoadingSpinner";
+import { useAlert } from "./../components/alert/AlertContext";
 
 import {
   fetchReferrals,
@@ -29,6 +30,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
   const isDoctor = user?.type === "D";
   const navigate = useNavigate();
   const [loader, setLoader] = useState(false);
+  const { alert, confirm } = useAlert();
 
   const [patientsDetailsList, setPatientsDetailsList] = useState([]);
 
@@ -49,7 +51,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
         setFiltered(res.data);
       } catch (error) {
         console.error("Failed to fetch referrals:", error);
-        showToast(
+        await alert(
           `Failed to fetch referrals: ${error.message}. Please try again later.`,
           "danger",
         );
@@ -84,10 +86,10 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
         filename = disposition.split("filename=")[1].replaceAll('"', "").trim();
       }
       createFileLink(blob, filename);
-      showToast("File downloaded successfully", "success");
+      await alert("File downloaded successfully", "success");
     } catch (error) {
       logger.error("Download failed", error, { id });
-      showToast(
+      await alert(
         error?.response?.data?.message || error.message || "Download failed",
         "danger",
       );
@@ -100,13 +102,13 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
       const updatedReferrals = await fetchReferrals(user?.location?.id);
       setReferrals(updatedReferrals.data);
       setFiltered(updatedReferrals.data);
-      showToast(res.data.message, "success");
+      await alert(res.data.message, "success");
       if (inputRef?.current) inputRef.current.value = "";
     } catch (e) {
       logger.error("Referral attachment upload failed", e, {
         referralId,
       });
-      showToast(e.response.data.message, "danger");
+      await alert(e.response.data.message, "danger");
     }
   };
 
@@ -128,21 +130,21 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
 
   const handleApprove = async (row) => {
     if (!row?.referralId) {
-      showToast("Missing referral details. Please try again.", "danger");
+      await alert(`Missing referral details. Please try again.`, "danger");
       return;
     }
 
     if (
-      !confirm(
+      !(await confirm(
         `Are you sure you want to approve the referral request for ${row.referralId}`,
-      )
+      ))
     )
       return;
 
     try {
       setLoader(true);
       const res = await updateStatus(row.referralId, "APPROVED", user.userId);
-      showToast(
+      await alert(
         // res?.message ||
         `Referral ${row.referralId} approved successfully`,
         "success",
@@ -154,7 +156,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
       logger.error("Referral approval failed", error, {
         referralId: row?.referralId,
       });
-      showToast(
+      await alert(
         error?.response?.data?.message ||
           error.message ||
           "Failed to approve referral",
@@ -167,14 +169,14 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
 
   const handleDecline = async (row) => {
     if (!row?.referralId) {
-      showToast("Missing referral details. Please try again.", "danger");
+      await alert(`Missing referral details. Please try again.`, "danger");
       return;
     }
 
     if (
-      !confirm(
+      !(await confirm(
         `Are you sure you want to reject the referral request for ${row.referralId}?`,
-      )
+      ))
     ) {
       return;
     }
@@ -182,7 +184,10 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
     try {
       setLoader(true);
       await updateStatus(row.referralId, "REJECTED", user.userId);
-      showToast(`Referral ${row.referralId} rejected successfully`, "success");
+      await alert(
+        `Referral ${row.referralId} rejected successfully`,
+        "success",
+      );
       const updated = await fetchReferrals(user?.location?.id);
       setReferrals(updated.data);
       setFiltered(updated.data);
@@ -190,7 +195,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
       logger.error("Referral decline failed", error, {
         referralId: row?.referralId,
       });
-      showToast(
+      await alert(
         error?.response?.data?.message ||
           error.message ||
           "Failed to decline referral",
@@ -208,10 +213,17 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
       const res = await searchByIpNumber(ipNumber);
 
       if (res.data.success) {
-        const familyMembers = res.data.data.InsuredPersonFamilyDetails || [];
+        const relatedToName = res?.data?.data?.personalDetails?.[0]?.name;
+        const familyMembers = (res.data.data.InsuredPersonFamilyDetails || []).map(
+          (member) => ({
+            ...member,
+            relatedToName,
+          }),
+        );
         const selfMember = {
-          name: res?.data?.data?.personalDetails?.[0]?.name,
+          name: relatedToName,
           relationship: "Self",
+          relatedToName,
           dob: res?.data?.data?.personalDetails?.[0]?.dateOfBirth,
           sex: res?.data?.data?.personalDetails?.[0]?.sex,
           residingState: res?.data?.data?.AddressDetails?.[0]?.address1,
@@ -225,7 +237,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
         return list;
       }
     } catch (err) {
-      showToast(
+      await alert(
         `Dashboard search failed ${err}, IpNo. : ${ipNumber}`,
         "danger",
       );
@@ -381,16 +393,18 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
                         r.referralStatus === "REJECTED"
                       ) && (
                         <td>
-                          <FaUserEdit
-                            onClick={() => handleEdit(r)}
-                            style={{
-                              cursor: "pointer",
-                              color: "#ffc106",
-                              marginRight: "12px",
-                              fontSize: "18px",
-                            }}
-                            title="Edit"
-                          />
+                          {/* {r.referralStatus != "PARTIAL_APPROVED" && ( */}
+                            <FaUserEdit
+                              onClick={() => handleEdit(r)}
+                              style={{
+                                cursor: "pointer",
+                                color: "#ffc106",
+                                marginRight: "12px",
+                                fontSize: "18px",
+                              }}
+                              title="Edit"
+                            />
+                          {/* )} */}
 
                           <TiTick
                             onClick={() => handleApprove(r)}

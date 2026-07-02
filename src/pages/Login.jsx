@@ -173,7 +173,7 @@ const Login = () => {
             onClick={handleLogin}
             disabled={loading}
           >
-            {loading ? "Sending OTP. Please wait..." : "Continue"}
+            {loading ? "Sending OTP. Please wait..." : "Login"}
           </button>
 
           <div className="mt-4 text-center">

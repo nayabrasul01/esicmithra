@@ -15,6 +15,20 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
   const { alert, confirm } = useAlert();
   const isDoctor = user?.type === "D";
   const [loader, setLoader] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(show);
+
+  useEffect(() => {
+    setIsModalVisible(show);
+  }, [show]);
+
+  const confirmAction = async (message) => {
+    setIsModalVisible(false);
+    const confirmed = await confirm(message);
+    if (!confirmed) {
+      setIsModalVisible(true);
+    }
+    return confirmed;
+  };
 
   const [formData, setFormData] = useState({
     referralId: null,
@@ -144,8 +158,9 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
 
     // Validate form data before submission
     if (!validateForm(updatedFormData)) return;
-    console.log(updatedFormData);
     
+    if(!(await confirmAction(`Are you sure you want to submit this referral request?`))) return;
+
     try {
       const response = await createReferralRequest(updatedFormData);
       if (response.success) {
@@ -219,6 +234,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
         uhid: patient.uHID,
         name: patient.name,
         relationship: patient.relationship,
+        relatedToName: patient.relatedToName,
         gender: patient.sex,
         age: calculateAge(patient.dob),
         dob: dob,
@@ -241,11 +257,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
     updatedFormData.status = "PARTIAL_APPROVED";
     updatedFormData.beneficiary.beneficiaryIpNumber = patient?.ipNumber;
 
-    console.log(updatedFormData);
-    
-
-    if(!(await confirm(`Are you sure you want to partially approve this referral ${formData.referralId} ?`))) return;
-    
+    if(!(await confirmAction(`Are you sure you want to partially approve this referral ${formData.referralId} ?`))) return;
     
     try {
       setLoader(true);
@@ -271,9 +283,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
       return;
     }
 
-    if (!(await confirm(`Are you sure you want to reject referral ${formData.referralId}?`))) {
-      return;
-    }
+    if (!(await confirmAction(`Are you sure you want to reject referral ${formData.referralId}?`))) return;
 
     try {
       setLoader(true);
@@ -294,7 +304,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
     }
   };
 
-  if (!show) return null;
+  if (!isModalVisible) return null;
 
   return (
     <>
@@ -624,6 +634,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                   <label><span style={{"color": "red"}}>*</span> SNOMED CT Search</label>
 
                   <SnomedSearch
+                    initialValue={formData.referralDetails?.diagnoses?.[0].snomedDiagnosis}
                     onSelect={(data) => {
                       setFormData((prev) => ({
                         ...prev,
@@ -692,7 +703,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
 
           <div className="modal-footer">
 
-            {!isDoctor && (
+            {!(isDoctor && referral) && (
 
               <button
                 className="btn btn-esic"
@@ -703,7 +714,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
 
             )}
 
-            {isDoctor && (
+            {isDoctor && referral && (
 
               <>
                 <button

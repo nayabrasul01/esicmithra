@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { CERTIFICATE_RULES } from "../../util/certificateRules";
 import {
   calculateLeaveTo,
@@ -21,17 +22,22 @@ import {
   createMedicalCertificate,
   closePreviousInProgressCertificate,
   generateCertificate,
+  updateSickCertificate,
 } from "../../services/medicalCertificateService";
 
-export default function SickCertificateForm({ patient }) {
+export default function SickCertificateForm({ patient, certificateData, mode }) {
   const [previousCert, setPreviousCert] = useState([]);
   const { alert, confirm } = useAlert();
-
+  const location = useLocation();
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
 
   const [showHistory, setShowHistory] = useState(false);
   const [historyData, setHistoryData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [editMode, setEditMode] = useState(mode || false);
+
+  // const certificateData = location?.state?.patient;
 
   const [formData, setFormData] = useState({
     certificateType: "",
@@ -63,9 +69,25 @@ export default function SickCertificateForm({ patient }) {
     return CERTIFICATE_RULES[formData.certificateType] || {};
   }, [formData.certificateType]);
 
+  // this used for auto-filling the form with previous certificate data when editing an existing certificate.
+  useEffect(() => {
+    if (certificateData) {
+      setFormData(buildFormData(certificateData));
+      setEditMode(true);
+    }
+  }, [certificateData]);
+
   // To fetch previous certificates whenever patient or certificate type changes.
   // This is required for auto-filling certain fields in case of intermediate certificates.
+  // Fetch previous certificates when patient or certificate type changes.
+  // Guard against repeated calls (e.g. caused by StrictMode double-render or
+  // rapid state updates) by tracking last fetched key.
+  const lastFetchKey = useRef(null);
   useEffect(() => {
+    const key = `${patient?.ipNumber || ""}_${formData.certificateType || ""}`;
+    if (!patient) return;
+    if (lastFetchKey.current === key) return;
+    lastFetchKey.current = key;
     fetchPrevious();
   }, [patient, formData.certificateType]);
 
@@ -127,7 +149,7 @@ export default function SickCertificateForm({ patient }) {
     if (
       (formData.certificateType === "FIRST" ||
         formData.certificateType === "FIRST_FINAL") &&
-      previousCert[0]?.status === "IN_PROGRESS"
+      previousCert[0]?.spellStatus === "ACTIVE"
     ) {
       const confirmed = await confirm(
         `Before Issuing another new First/First and Final Certificate, Please Close Previous spell/Opened Certificate, 
@@ -172,7 +194,7 @@ export default function SickCertificateForm({ patient }) {
       const res = await closePreviousInProgressCertificate(ipNumber);
       if (res.success) {
         await alert(
-          "Closed all previous certificates successfully.",
+          "Spell closed for all previous certificates successfully.",
           "success",
         );
         setPreviousCert([]); // Clear previous cert to avoid confusion.
@@ -212,21 +234,18 @@ export default function SickCertificateForm({ patient }) {
     }
   };
 
-  const handleSubmit = async () => {
-    if (!isFormValid())
-      return await alert(
-        "Please fill all the required fields before submitting.",
-        "warning",
-      );
+  const handleApprove = async () => {
     setLoading(true);
     const payload = buildPayload();
+    payload.status = "APPROVED"; // set status to APPROVED for approval action
+    
     try {
       if (
-        !(await confirm("Are you sure you want to generate the certificate?"))
+        !(await confirm("Are you sure you want to Approve and generate the certificate?"))
       )
         return;
 
-      const res = await createMedicalCertificate(payload);
+      const res = await updateSickCertificate(payload);
       if (res.success) {
         payload.certificateNumber = res.data.certificateNumber;
         payload.id = res.data.id;
@@ -261,7 +280,93 @@ export default function SickCertificateForm({ patient }) {
           issueESICMed11: false,
         });
         await alert(
-          `Sick certificate ${res.data.certificateNumber} created & generated successfully.`,
+          `Sick certificate ${res.data.certificateNumber} approved successfully.`,
+          "success",
+        );
+        navigate("/medical-certificate", { state: user});
+      } else {
+        await alert(
+          `Failed to create certificate. Please try again.`,
+          "danger",
+        );
+      }
+    } catch (err) {
+      await alert(err?.response?.data?.message, "danger");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+   const handleReject = async () => {
+    setLoading(true);
+    const payload = buildPayload();
+    payload.status = "REJECTED"; // set status to REJECTED for rejection action
+    try {
+      if (
+        !(await confirm("Are you sure you want to Reject the certificate?"))
+      )
+        return;
+
+      const res = await updateMedicalCertificate(payload);
+      await alert(
+          `Sick certificate ${res.data.certificateNumber} rejected successfully.`,
+          "success",
+        );
+      navigate("/medical-certificate", { state: user});
+    } catch (err) {
+      await alert(err?.response?.data?.message, "danger");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!isFormValid())
+      return await alert(
+        "Please fill all the required fields before submitting.",
+        "warning",
+      );
+    setLoading(true);
+    const payload = buildPayload();
+    
+    try {
+      if (
+        !(await confirm("Are you sure you want to create draft certificate?"))
+      )
+        return;
+
+      const res = await createMedicalCertificate(payload);
+      if (res.success) {
+        payload.certificateNumber = res.data.certificateNumber;
+        payload.id = res.data.id;
+        setFormData({
+          certificateType: "",
+          spellType: "",
+          leaveFrom: "",
+          leaveTo: "",
+          followUpDate: "",
+          fitDate: "",
+          remarks: "",
+          additionalRemarks: "",
+          hospitalization: "",
+          doa: "",
+          dod: "",
+          hospitalName: "",
+          issueDate: "",
+          hasAttendedMobileDispensary: "",
+          firstCertificateDate: new Date().toISOString().split("T")[0],
+          visitDate: "",
+          spellRemarks: "",
+          placeOfExamination: "",
+          diseaseDiagnosis: "",
+          diseaseRemarks: "",
+
+          leavesRequired: "",
+          issueESICMed11: false,
+        });
+        await alert(
+          `Draft sick certificate ${res.data.certificateNumber} created successfully. 
+          Note: Pending for doctor's approval. You can view the certificate in the history modal.`,
           "success",
         );
         // setPreviousCert(res.data); // to ensure history modal shows the newly created certificate when opened immediately after creation
@@ -280,8 +385,9 @@ export default function SickCertificateForm({ patient }) {
 
   const buildPayload = () => {
     return {
-      certificateType: formData.certificateType,
-      spellType: formData.spellType,
+      id: certificateData?.id || null,
+      certificateType: formData.certificateType || (editMode ? certificateData?.certificateType : ""),
+      spellType: formData.spellType || (editMode ? certificateData?.spellType : ""),
       status: "IN_PROGRESS",
       patient: {
         ipNumber: patient?.ipNumber,
@@ -290,6 +396,7 @@ export default function SickCertificateForm({ patient }) {
         name: patient?.name,
         gender: patient?.sex,
         relationship: patient?.relationship,
+        relatedToName: patient?.relatedToName,
         dob: patient?.dob,
         locationId: user?.location?.id,
         state: patient?.residingState,
@@ -311,7 +418,7 @@ export default function SickCertificateForm({ patient }) {
       },
 
       leaveDetails: {
-        eligibleLeaves: rules.eligibleLeaves,
+        eligibleLeaves: rules.eligibleLeaves || (editMode ? certificateData?.leaveDetails?.eligibleLeaves : 0),
         leavesRequired: formData.leavesRequired,
         leaveFrom: formData.leaveFrom,
         leaveTo: formData.leaveTo,
@@ -323,6 +430,55 @@ export default function SickCertificateForm({ patient }) {
           additionalRemarks: formData.additionalRemarks,
         },
       },
+    };
+  };
+
+  const buildFormData = (data) => {
+    return {
+      certificateType: data?.certificateType || "",
+      spellType: data?.spellType || "",
+
+      hospitalization: data?.certificateDetails?.hospitalizationType || "",
+
+      doa: data?.certificateDetails?.doa || "",
+      dod: data?.certificateDetails?.dod || "",
+      hospitalName: data?.certificateDetails?.hospitalName || "",
+
+      issueDate: data?.certificateDetails?.issueDate || "",
+
+      hasAttendedMobileDispensary:
+        data?.certificateDetails?.hasAttendedMobileDispensary || false,
+
+      firstCertificateDate:
+        data?.certificateDetails?.firstCertificateDate || "",
+
+      visitDate: data?.certificateDetails?.visitDate || "",
+
+      spellRemarks: data?.certificateDetails?.spellRemarks || "",
+
+      placeOfExamination: data?.certificateDetails?.placeOfExamination || "",
+
+      diseaseDiagnosis: data?.certificateDetails?.diseaseDiagnosis || "",
+
+      diseaseRemarks: data?.certificateDetails?.diseaseRemarks || "",
+
+      eligibleLeaves: data?.leaveDetails?.eligibleLeaves || 0,
+
+      leavesRequired: data?.leaveDetails?.leavesRequired || "",
+
+      leaveFrom: data?.leaveDetails?.leaveFrom || "",
+
+      leaveTo: data?.leaveDetails?.leaveTo || "",
+
+      followUpDate: data?.leaveDetails?.followUpDate || "",
+
+      fitDate: data?.leaveDetails?.fitDate || "",
+
+      issueESICMed11: data?.leaveDetails?.issueESICMed11 || false,
+
+      remarks: data?.leaveDetails?.remarks?.remarks || "",
+
+      additionalRemarks: data?.leaveDetails?.remarks?.additionalRemarks || "",
     };
   };
 
@@ -403,7 +559,10 @@ export default function SickCertificateForm({ patient }) {
               <label>Certificate Type</label>
               <select
                 className="form-select"
-                value={formData.certificateType}
+                value={
+                  formData.certificateType ||
+                  (editMode ? certificateData?.certificateType || "" : "")
+                }
                 onChange={(e) =>
                   setFormData({
                     ...formData,
@@ -411,6 +570,7 @@ export default function SickCertificateForm({ patient }) {
                     spellType: "",
                   })
                 }
+                disabled={editMode}
               >
                 <option value="">Select</option>
                 <option value="FIRST">Medical Certificate - First</option>
@@ -431,8 +591,12 @@ export default function SickCertificateForm({ patient }) {
               <label>Spell Type</label>
               <select
                 className="form-select"
-                value={formData.spellType}
+                value={
+                  formData.spellType ||
+                  (editMode ? certificateData?.spellType || "" : "")
+                }
                 onChange={(e) => handleSpellType(e.target.value)}
+                disabled={editMode} // disable spell type selection when editing an existing certificate to avoid changing the spell type of an existing certificate.
               >
                 <option value="">Select</option>
                 <option value="FRESH">Fresh/New Spell</option>
@@ -462,7 +626,8 @@ export default function SickCertificateForm({ patient }) {
 
           {/* Certificate Details */}
 
-          {rules.show?.hospitalization && formData.spellType && (
+          {((rules.show?.hospitalization && formData.spellType) ||
+            editMode) && (
             <div className="p-1 mb-3">
               <h6
                 className="bg-light p-2 rounded"
@@ -484,6 +649,7 @@ export default function SickCertificateForm({ patient }) {
                     <input
                       type="radio"
                       name="hospitalization"
+                      checked={formData.hospitalization === "MANUAL"}
                       disabled={formData.spellType === "ONGOING"}
                       onChange={() =>
                         setFormData({
@@ -496,6 +662,7 @@ export default function SickCertificateForm({ patient }) {
                     <input
                       type="radio"
                       name="hospitalization"
+                      checked={formData.hospitalization === "HOSPITAL"}
                       disabled={formData.spellType === "ONGOING"}
                       onChange={() =>
                         setFormData({
@@ -508,6 +675,7 @@ export default function SickCertificateForm({ patient }) {
                     <input
                       type="radio"
                       name="hospitalization"
+                      checked={formData.hospitalization === "NA"}
                       disabled={formData.spellType === "ONGOING"}
                       onChange={() =>
                         setFormData({ ...formData, hospitalization: "NA" })
@@ -524,6 +692,7 @@ export default function SickCertificateForm({ patient }) {
                           placeholder="DOA"
                           className="form-control"
                           type="date"
+                          value={formData.doa}
                           onChange={(e) =>
                             setFormData({ ...formData, doa: e.target.value })
                           }
@@ -535,6 +704,7 @@ export default function SickCertificateForm({ patient }) {
                           placeholder="DOD"
                           className="form-control"
                           type="date"
+                          value={formData.dod}
                           onChange={(e) =>
                             setFormData({ ...formData, dod: e.target.value })
                           }
@@ -551,6 +721,7 @@ export default function SickCertificateForm({ patient }) {
                               hospitalName: e.target.value,
                             })
                           }
+                          value={formData.hospitalName}
                         />
                       </div>
                     </div>
@@ -569,6 +740,7 @@ export default function SickCertificateForm({ patient }) {
                               issueDate: e.target.value,
                             })
                           }
+                          value={formData.issueDate}
                         />
                       </div>
                     </div>
@@ -683,26 +855,26 @@ export default function SickCertificateForm({ patient }) {
                 {/* Disease Diagnosis */}
                 <div className="col-md-6">
                   <label className="form-label ">Disease(s) / Diagnosis</label>
-                  <textarea
-                      className="form-control"
-                      rows={2}
-                      value={formData.diseaseDiagnosis}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          diseaseDiagnosis: e.target.value,
-                        })
-                      }
-                    />
+                  {/* <textarea
+                    className="form-control"
+                    rows={2}
+                    value={formData.diseaseDiagnosis}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        diseaseDiagnosis: e.target.value,
+                      })
+                    }
+                  /> */}
 
-                  {/* <SnomedSearch
+                  <SnomedSearch
                     onSelect={(data) => {
                       setFormData({
                         ...formData,
                         diseaseDiagnosis: data.snomedDiagnosis,
                       });
                     }}
-                  /> */}
+                  />
                 </div>
 
                 {/* Disease Remarks */}
@@ -738,7 +910,10 @@ export default function SickCertificateForm({ patient }) {
                   <label className="form-label ">Eligible Leaves</label>
                   <input
                     className="form-control"
-                    value={rules.eligibleLeaves || ""}
+                    value={
+                      rules.eligibleLeaves ||
+                      (editMode ? formData.eligibleLeaves : "")
+                    }
                     disabled
                   />
                 </div>
@@ -983,13 +1158,44 @@ export default function SickCertificateForm({ patient }) {
           </div>
           {/* Actions */}
           <div className="mt-3 text-end">
-            <button
-              className="btn btn-esic"
-              disabled={!isFormValid()}
-              onClick={handleSubmit}
-            >
-              Create & Generate Certificate
-            </button>
+            {!editMode && (
+              <button
+                className="btn btn-esic"
+                disabled={!isFormValid()}
+                onClick={() => handleSubmit()}
+              >
+                Create & Generate Certificate
+              </button>
+            )}
+            {editMode && (
+              <span className="d-flex gap-2 justify-content-end">
+                <button
+                  className="btn btn-esic"
+                  // disabled={!isFormValid()}
+                  onClick={() => handleApprove()}
+                >
+                  Approve & Generate Certificate
+                </button>
+
+                <button
+                  className="btn btn-esic"
+                  // disabled={!isFormValid()}
+                  onClick={() => handleReject()}
+                >
+                  Reject Certificate
+                </button>
+
+                <button
+                  className="btn btn-esic"
+                  // disabled={!isFormValid()}
+                  onClick={() =>
+                    navigate("/medical-certificate", { state: user })
+                  }
+                >
+                  Back
+                </button>
+              </span>
+            )}
           </div>
         </div>
       )}

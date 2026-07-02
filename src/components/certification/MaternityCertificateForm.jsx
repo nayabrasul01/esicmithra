@@ -1,39 +1,56 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { MATERNITY_CERTIFICATION_OPTIONS } from "../../util/certificateRules";
 import { createFileLink } from "../../util/utilities";
 import {
   createMedicalMaternityCertificate,
   generateCertificate,
+  updateMaternityCertificate
 } from "../../services/medicalCertificateService";
 import { useAlert } from "./../alert/AlertContext";
 
-export default function MaternityCertificateForm({ patient }) {
+const INITIAL_FORM_DATA = {
+  durationOfPregnancy: "",
+  certificateType: "MATERNITY",
+  certificateSubType: "",
+
+  expectedDateOfConfinement: "",
+  placeOfExamination: "",
+  abstentionFromDate: "",
+
+  miscarriageDate: "",
+  placeOfMiscarriage: "",
+
+  confinementDate: "",
+  outcomeOfPregnancy: "",
+  placeOfConfinement: "",
+
+  motherAlive: false,
+  childAlive: false,
+
+  remarks: "",
+};
+
+export default function MaternityCertificateForm({ patient, certificateData, mode}) {
   const [loading, setLoading] = useState(false);
   const { alert, confirm } = useAlert();
+  const [editMode, setEditMode] = useState(mode || false);
+  const navigate = useNavigate();
 
   const user = JSON.parse(localStorage.getItem("user"));
-  const [formData, setFormData] = useState({
-    durationOfPregnancy: "",
-    certificateType: "MATERNITY",
-    certificateSubType: "",
+  const [formData, setFormData] = useState(INITIAL_FORM_DATA);
 
-    expectedDateOfConfinement: "",
-    placeOfExamination: "",
-    abstentionFromDate: "",
-
-    miscarriageDate: "",
-    placeOfMiscarriage: "",
-
-    confinementDate: "",
-    outcomeOfPregnancy: "",
-    placeOfConfinement: "",
-
-    motherAlive: false,
-    childAlive: false,
-
-    remarks: "",
-  });
+  // this used for auto-filling the form with previous certificate data when editing an existing certificate.
+  useEffect(() => {
+    if (certificateData) {
+      setFormData(buildFormData(certificateData));
+      console.log(buildFormData(certificateData));
+      
+    } else {
+      setFormData(INITIAL_FORM_DATA);
+    }
+  }, [certificateData]);
 
   /**
    * ----------------------------------------------------------------
@@ -41,23 +58,16 @@ export default function MaternityCertificateForm({ patient }) {
    * ----------------------------------------------------------------
    */
 
-  const duration = Number(formData.durationOfPregnancy || 0);
-
-  const enablePregnancyCertificate = duration >= 1;
-
-  const enableMiscarriageCertificate = duration >= 1;
-
-  const enableConfinementCertificate = duration >= 27;
-
-  /**
-   * ----------------------------------------------------------------
-   * AVAILABLE CERTIFICATE OPTIONS
-   * ----------------------------------------------------------------
-   */
-
-  const certificateOptions = useMemo(() => {
-    return MATERNITY_CERTIFICATION_OPTIONS;
-  }, []);
+  const { duration, enablePregnancyCertificate, enableMiscarriageCertificate, enableConfinementCertificate, certificateOptions } = useMemo(() => {
+    const dur = Number(formData?.durationOfPregnancy || 0);
+    return {
+      duration: dur,
+      enablePregnancyCertificate: dur >= 1,
+      enableMiscarriageCertificate: dur >= 1,
+      enableConfinementCertificate: dur >= 27,
+      certificateOptions: MATERNITY_CERTIFICATION_OPTIONS
+    };
+  }, [formData]);
 
   /**
    * ----------------------------------------------------------------
@@ -117,8 +127,9 @@ export default function MaternityCertificateForm({ patient }) {
 
   const buildPayload = () => {
     const payload = {
-      certificateType: formData.certificateType,
-      certificateSubType: formData.certificateSubType,
+      id: certificateData?.id || null,
+      certificateType: formData.certificateType || (editMode ? certificateData?.certificateType : ""),
+      certificateSubType: formData.certificateSubType || (editMode ? certificateData?.spellType : ""),
       status: "IN_PROGRESS",
       patient: {
         ipNumber: patient?.ipNumber,
@@ -192,6 +203,43 @@ export default function MaternityCertificateForm({ patient }) {
     return payload;
   };
 
+  const buildFormData = (data) => {
+    if (!data) return INITIAL_FORM_DATA;
+
+    return {
+      certificateType: data.certificateType || "",
+      certificateSubType: data.certificateSubType || "",
+
+      durationOfPregnancy: data.certificateDetails?.durationOfPregnancy || 0,
+
+      remarks: data.certificateDetails?.remarks || "",
+
+      // Expected Confinement
+      expectedDateOfConfinement:
+        data.certificateDetails?.expectedDateOfConfinement || "",
+
+      placeOfExamination: data.certificateDetails?.placeOfExamination || "",
+
+      abstentionFromDate: data.certificateDetails?.abstentionFromDate || "",
+
+      // Miscarriage
+      miscarriageDate: data.certificateDetails?.miscarriageDate || "",
+
+      placeOfMiscarriage: data.certificateDetails?.placeOfMiscarriage || "",
+
+      // Confinement
+      confinementDate: data.certificateDetails?.confinementDate || "",
+
+      outcomeOfPregnancy: data.certificateDetails?.outcomeOfPregnancy || "",
+
+      placeOfConfinement: data.certificateDetails?.placeOfConfinement || "",
+
+      motherAlive: data.certificateDetails?.motherAlive || false,
+
+      childAlive: data.certificateDetails?.childAlive || false,
+    };
+  };
+
   /**
    * ----------------------------------------------------------------
    * SUBMIT FORM
@@ -206,11 +254,11 @@ export default function MaternityCertificateForm({ patient }) {
       );
     setLoading(true);
     const payload = buildPayload();
-    console.log("REQUEST PAYLOAD => ", payload);
+    // console.log("REQUEST PAYLOAD => ", payload);
 
     try {
       if (
-        !(await confirm("Are you sure you want to generate the certificate?"))
+        !(await confirm("Are you sure you want to create draft certificate?"))
       )
         return;
 
@@ -218,36 +266,18 @@ export default function MaternityCertificateForm({ patient }) {
       if (res.success) {
         payload.certificateNumber = res.data.certificateNumber;
         payload.id = res.data.id;
-        const response = await generateCertificate(payload);
-        const blob = new Blob([response], {
-          type: "application/pdf",
-        });
-        createFileLink(blob, "medical_maternity_certificate.pdf");
-        setFormData({
-          durationOfPregnancy: "",
-          certificateType: "MATERNITY",
-          certificateSubType: "",
-
-          expectedDateOfConfinement: "",
-          placeOfExamination: "",
-          abstentionFromDate: "",
-
-          miscarriageDate: "",
-          placeOfMiscarriage: "",
-
-          confinementDate: "",
-          outcomeOfPregnancy: "",
-          placeOfConfinement: "",
-
-          motherAlive: false,
-          childAlive: false,
-
-          remarks: "",
-        });
+        // const response = await generateCertificate(payload);
+        // const blob = new Blob([response], {
+        //   type: "application/pdf",
+        // });
+        // createFileLink(blob, "medical_maternity_certificate.pdf");
+        setFormData(INITIAL_FORM_DATA);
         await alert(
-          `Maternity certificate ${res.data.certificateNumber} created & generated successfully.`,
+          `Draft maternity certificate ${res.data.certificateNumber} created successfully. 
+          Note: Pending for doctor's approval. You can view the certificate in the history modal.`,
           "success",
         );
+        navigate("/medical-certificate", { state: user });
       } else {
         await alert(
           "IP Data saved but failed to generate certificate. Please try again.",
@@ -260,6 +290,49 @@ export default function MaternityCertificateForm({ patient }) {
       setLoading(false);
     }
   };
+
+  const handleEdit = async (status) => {
+    setLoading(true);
+    const payload = buildPayload();
+    payload.status = status; // set status to the provided value
+    // console.log("REQUEST PAYLOAD => ", payload);
+
+    try {
+      if (
+        !(await confirm(`Are you sure you want to ${status === "APPROVED" ? "approve" : "reject"} the certificate?`))
+      )
+        return;
+
+      const res = await updateMaternityCertificate(payload);
+      if (res.success) {
+        payload.certificateNumber = res.data.certificateNumber;
+        payload.id = res.data.id;
+        if(status === "APPROVED") {
+          const response = await generateCertificate(payload);
+          const blob = new Blob([response], {
+            type: "application/pdf",
+          });
+          createFileLink(blob, "medical_maternity_certificate.pdf");
+        }
+        setFormData(INITIAL_FORM_DATA);
+        await alert(
+          `Maternity certificate ${res.data.certificateNumber} ${status === "APPROVED" ? "approved" : "rejected"} successfully.`,
+          "success",
+        );
+        navigate("/medical-certificate", { state: user });
+      } else {
+
+        await alert(
+          "IP Data saved but failed to generate certificate. Please try again.",
+          "danger",
+        );
+      }
+    } catch (err) {
+      await alert(err?.response?.data?.message, "danger");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   /**
    * ----------------------------------------------------------------
@@ -615,13 +688,55 @@ export default function MaternityCertificateForm({ patient }) {
             Clear
           </button> */}
 
-          <button
-            className="btn btn-esic mt-3"
-            onClick={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? "loading..." : "Create & Generate Certificate"}
-          </button>
+          {!editMode ? (
+            <span className="d-flex gap-2 justify-content-end">
+              <button
+                className="btn btn-esic mt-3"
+                onClick={() => handleSubmit()}
+                disabled={loading}
+              >
+                {loading ? "loading..." : "Create Draft Certificate"}
+              </button>
+
+              <button
+                className="btn btn-esic mt-3"
+                onClick={() =>
+                  navigate("/medical-certificate", { state: user })
+                }
+                disabled={loading}
+              >
+                {loading ? "loading..." : "Back to Certificate List"}
+              </button>
+            </span>
+          ) : (
+            <span className="d-flex gap-2 justify-content-end">
+              <button
+                className="btn btn-esic mt-3"
+                onClick={() => handleEdit("APPROVED")}
+                disabled={loading}
+              >
+                {loading ? "loading..." : "Approve and Generate Certificate"}
+              </button>
+
+              <button
+                className="btn btn-esic mt-3"
+                onClick={() => handleEdit("REJECTED")}
+                disabled={loading}
+              >
+                {loading ? "loading..." : "Reject Certificate"}
+              </button>
+
+              <button
+                className="btn btn-esic mt-3"
+                onClick={() =>
+                  navigate("/medical-certificate", { state: user })
+                }
+                disabled={loading}
+              >
+                {loading ? "loading..." : "Back to Certificate List"}
+              </button>
+            </span>
+          )}
         </div>
       </div>
     </div>

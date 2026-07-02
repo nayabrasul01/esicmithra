@@ -34,3 +34,4 @@ export function createFileLink(blob, filename) {
     a.remove();
     window.URL.revokeObjectURL(url);
 }
+

@@ -187,20 +187,22 @@ export default function CertificateTableHistoryModal({
                         </>
                       )}
 
-                      <div className="mt-2">
-                        <a
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn btn-sm btn-esic btn-outline-primary"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            download(cert.id);
-                          }}
-                        >
-                          <FaDownload size={12} />
-                          &nbsp; <strong>Download</strong>
-                        </a>
-                      </div>
+                      {cert.status === "APPROVED" && (
+                        <div className="mt-2">
+                          <a
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn btn-sm btn-esic btn-outline-primary"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              download(cert.id);
+                            }}
+                          >
+                            <FaDownload size={12} />
+                            &nbsp; <strong>Download</strong>
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

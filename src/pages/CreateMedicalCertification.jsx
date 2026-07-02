@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-
+import { useLocation, useNavigate } from "react-router-dom";
 import { searchByIpNumber } from "../services/authService";
 import { calculateAge } from "../util/utilities";
 import { showToast } from "../util/toastUtil";
@@ -12,21 +12,31 @@ import SickCertificateForm from "../components/certification/SickCertificateForm
 import MaternityCertificateForm from "../components/certification/MaternityCertificateForm";
 
 export default function CreateMedicalCertification() {
+  const location = useLocation();
   const { alert, confirm } = useAlert();
-  const [certificateCategory, setCertificateCategory] = useState("SICK");
+  const [certificateCategory, setCertificateCategory] = useState( location?.state?.cert?.certificateType || "MATERNITY");
   const [patient, setPatient] = useState(null);
   const [ipNumber, setIpNumber] = useState("");
   const [searching, setSearching] = useState(false);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
+  const certificateData = location?.state?.cert;
 
+  useEffect(() => {
+    if (certificateData?.patient?.ipNumber) {
+      const ip = certificateData.patient?.ipNumber;
+      handleSearch(ip);
+    }
+  }, [certificateData]);
+
+  const handleSearch = async (searchIp) => {
+    // if (e?.preventDefault) e.preventDefault();
+    const actualIp = searchIp || ipNumber;
     setSearching(true);
     try {
       // mocking data Headers, since the staging API is not working as expected. Will remove this once the API is fixed.
-      const res = await axios.get(`http://localhost:3000/LiveListData`);
+      // const res = await axios.get(`http://localhost:3000/LiveListData`);
 
-      // const res = await searchByIpNumber(ipNumber);
+      const res = await searchByIpNumber(actualIp);
       if (res.data.success) {
         if (
           res.data.data.InsuredPersonFamilyDetails == null ||
@@ -38,6 +48,7 @@ export default function CreateMedicalCertification() {
         const selfMember = {
           name: res.data.data.personalDetails[0].name,
           relationship: "Self",
+          relatedToName: res.data.data.personalDetails[0].name,
           dob: res.data.data.personalDetails[0].dateOfBirth,
           sex: res.data.data.personalDetails[0].sex,
           residingState:
@@ -46,7 +57,7 @@ export default function CreateMedicalCertification() {
             res.data.data.AddressDetails[0].address2,
           marstatus: res.data.data.personalDetails[0].maritalStatus,
           uHID: res.data.data.uHID,
-          ipNumber: ipNumber,
+          ipNumber: actualIp,
           employerCode:
             res.data.data.presentEmployerDetailsCollection[0].employerCode,
         };
@@ -55,11 +66,10 @@ export default function CreateMedicalCertification() {
       }
       setSearching(false);
     } catch (err) {
-      console.log(err);
       // showToast(err?.response?.data?.message, "danger");
       await alert(
         err?.response?.data?.message ||
-          "An error occurred while fetching patient records.",
+          "An error occurred while fetching patient records. Please try again.",
         "danger",
       );
     } finally {
@@ -97,6 +107,7 @@ export default function CreateMedicalCertification() {
                   checked={certificateCategory === "SICK"}
                   onChange={(e) => setCertificateCategory(e.target.value)}
                   style={{ accentColor: "#742902" }}
+                  disabled={certificateData}
                 />
 
                 <label
@@ -117,6 +128,7 @@ export default function CreateMedicalCertification() {
                   value="MATERNITY"
                   checked={certificateCategory === "MATERNITY"}
                   onChange={(e) => setCertificateCategory(e.target.value)}
+                  disabled={certificateData}
                 />
 
                 <label
@@ -142,10 +154,11 @@ export default function CreateMedicalCertification() {
               className="form-control"
               style={{ width: "300px" }}
               placeholder="Enter 10-digit Insurance No"
-              value={ipNumber}
+              value={ipNumber || certificateData?.patient?.ipNumber || ""}
               onChange={(e) => setIpNumber(e.target.value)}
               maxLength={10}
               inputMode="numeric"
+              disabled={certificateData}
             />
             <button
               className="btn btn-esic"
@@ -154,7 +167,7 @@ export default function CreateMedicalCertification() {
               onClick={(e) => {
                 setSearching(true);
                 setTimeout(() => {
-                  handleSearch(e);
+                  handleSearch(ipNumber);
                 }, 1000); // for testing purpose, to show the loading spinner. Remove the setTimeout in production.
               }}
             >
@@ -203,11 +216,19 @@ export default function CreateMedicalCertification() {
 
       {/* Main Form */}
       {!searching &&
-        patient &&
-        (certificateCategory === "SICK" ? (
-          <SickCertificateForm patient={patient} />
+        (certificateData ? patient : patient || certificateData) &&
+        (certificateCategory === "MATERNITY" ? (
+            <MaternityCertificateForm
+            patient={patient}
+            certificateData={certificateData}
+            mode={!!certificateData}
+          />
         ) : (
-          <MaternityCertificateForm patient={patient} />
+          <SickCertificateForm
+            patient={patient}
+            certificateData={certificateData}
+            mode={!!certificateData}
+          />
         ))}
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUserEdit } from "react-icons/fa";
 import { TiTick } from "react-icons/ti";
@@ -51,8 +51,14 @@ const CertificatesTable = ({ user, onViewHistory }) => {
         );
       }
     };
+
+    // Prevent double fetching in StrictMode (dev) or duplicate renders
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
     getCertificates();
   }, []);
+
+  const fetchedRef = useRef(false);
 
   const download = async (id) => {
     try {
@@ -83,8 +89,47 @@ const CertificatesTable = ({ user, onViewHistory }) => {
     setPage(1);
   };
 
-  const handleEdit = (cert) => {
+  const showHistoryModal = (cert) => {
     onViewHistory(cert, cert.patient);
+  };
+
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      APPROVED: { label: "Approved", bg: "#198754", color: "#fff" },
+      REJECTED: { label: "Rejected", bg: "#dc3545", color: "#fff" },
+      IN_PROGRESS: { label: "In Progress", bg: "#ffc107", color: "#212529" },
+    };
+
+    const { label, bg, color } = statusConfig[status] || {
+      label: status,
+      bg: "#6c757d",
+      color: "#fff",
+    };
+
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "0.25rem 0.50rem",
+          borderRadius: "999px",
+          backgroundColor: bg,
+          color,
+          fontSize: "0.75rem",
+          fontWeight: 500,
+          textTransform: "capitalize",
+        }}
+      >
+        {label}
+      </span>
+    );
+  };
+
+  const handleEdit = (cert) => {
+    console.log(cert);
+    
+    navigate("/create-certificate", { state: { cert } });
   };
 
   const indexOfLast = page * recordsPerPage;
@@ -137,7 +182,7 @@ const CertificatesTable = ({ user, onViewHistory }) => {
                   {/* <th width="150">Approved Certificate Form</th> */}
                   <th>Status</th>
 
-                  {/* {isDoctor && <th style={{ width: "220px" }}>Actions</th>} */}
+                  {isDoctor && <th style={{ width: "220px" }}>Actions</th>}
                 </tr>
               </thead>
 
@@ -160,7 +205,7 @@ const CertificatesTable = ({ user, onViewHistory }) => {
                         //   e.preventDefault();
                         //   download(c.id);
                         // }}
-                        onClick={() => handleEdit(c)}
+                        onClick={() => showHistoryModal(c)}
                         style={{
                           cursor: "pointer",
                           color: "#0d6efd",
@@ -174,7 +219,57 @@ const CertificatesTable = ({ user, onViewHistory }) => {
                     <td>{c.patient.uhid}</td>
                     <td>{c.patient.name}</td>
                     {/* <td>{c.certificateDetails?.firstCertificateDate}</td> */}
-                    <td>{c.status}</td>
+                    <td>{getStatusBadge(c.status)}</td>
+
+                    {isDoctor &&
+                      !(
+                        c.status === "APPROVED" ||
+                        c.status === "REJECTED"
+                      ) && (
+                        <td>
+                          {/* {r.referralStatus != "PARTIAL_APPROVED" && ( */}
+                            <FaUserEdit
+                              onClick={() => handleEdit(c)}
+                              style={{
+                                cursor: "pointer",
+                                color: "#ffc106",
+                                marginRight: "12px",
+                                fontSize: "18px",
+                              }}
+                              title="Edit"
+                            />
+                          {/* )} */}
+
+                          {/* <TiTick
+                            onClick={() => handleEdit(c)}
+                            style={{
+                              cursor: "pointer",
+                              color: "#28a745",
+                              marginRight: "12px",
+                              fontSize: "18px",
+                            }}
+                            title="Approve"
+                          />
+
+                          <MdCancel
+                            onClick={() => handleEdit(c)}
+                            style={{
+                              cursor: "pointer",
+                              color: "#dc3545",
+                              fontSize: "18px",
+                            }}
+                            title="Reject"
+                          /> */}
+                        </td>
+                      )}
+                    {isDoctor &&
+                      (c.status === "APPROVED" ||
+                        c.status === "REJECTED") && (
+                        <td className="my-auto">
+                          <RiErrorWarningFill color="#9c231c" /> No action
+                          required.
+                        </td>
+                      )}
                   </tr>
                 ))}
               </tbody>

@@ -1,4 +1,4 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import logo from "./../assets/esic_header_logo.jpg";
 import indiaGovSymbol from "./../assets/India_gov_symbol_header.png";
@@ -11,8 +11,16 @@ import LoadingSpinner from "./LoadingSpinner";
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [loading, setLoading] = React.useState(false);
-  const user = JSON.parse(localStorage.getItem("user"));
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    setUser(storedUser ? JSON.parse(storedUser) : null);
+  }, [location.pathname]);
 
   const hideLogout =
     location.pathname === "/login" || location.pathname === "/";

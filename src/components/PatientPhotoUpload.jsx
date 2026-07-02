@@ -25,7 +25,8 @@ const PatientPhotoUpload = ({ photo, onPhotoChange }) => {
       reader.readAsDataURL(blob);
     } catch (err) {
       // showToast(`Image conversion failed: ${err}`, "danger");
-      await alert(`Image conversion failed: ${err}`, "danger");
+      showToast(`Image conversion failed: ${err}`, "danger");
+      onPhotoChange(null);
     }
   };
 

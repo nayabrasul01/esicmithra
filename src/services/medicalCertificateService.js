@@ -20,6 +20,32 @@ export const createMedicalCertificate = async (payload) => {
   }
 };
 
+export const updateSickCertificate = async (payload) => {
+  try {
+    const res = await API.put("/medical-certificates/sick/update", payload);
+    logger.info("Medical certificate updated successfully", {
+      referralId: res?.data,
+      responseMessage: res?.data?.message,
+    });
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateMaternityCertificate = async (payload) => {
+  try {
+    const res = await API.put("/medical-certificates/maternity/update", payload);
+    logger.info("Maternity certificate updated successfully", {
+      referralId: res?.data,
+      responseMessage: res?.data?.message,
+    });
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const createMedicalMaternityCertificate = async (payload) => {
   try {
     const res = await API.post("/medical-certificates/maternity/create", payload);
