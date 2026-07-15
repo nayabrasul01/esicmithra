@@ -96,7 +96,9 @@ const CertificatesTable = ({ user, onViewHistory }) => {
   const getStatusBadge = (status) => {
     const statusConfig = {
       APPROVED: { label: "Approved", bg: "#198754", color: "#fff" },
+      CLOSED: { label: "Closed", bg: "#198754", color: "#fff" },
       REJECTED: { label: "Rejected", bg: "#dc3545", color: "#fff" },
+      ACTIVE: { label: "Active", bg: "#198754", color: "#fff" },
       IN_PROGRESS: { label: "In Progress", bg: "#ffc107", color: "#212529" },
     };
 
@@ -127,7 +129,7 @@ const CertificatesTable = ({ user, onViewHistory }) => {
   };
 
   const handleEdit = (cert) => {
-    console.log(cert);
+    // console.log(cert);
     
     navigate("/create-certificate", { state: { cert } });
   };
@@ -181,6 +183,7 @@ const CertificatesTable = ({ user, onViewHistory }) => {
                   {/* <th>Created Date</th> */}
                   {/* <th width="150">Approved Certificate Form</th> */}
                   <th>Status</th>
+                  <th>Spell Status</th>
 
                   {isDoctor && <th style={{ width: "220px" }}>Actions</th>}
                 </tr>
@@ -220,56 +223,38 @@ const CertificatesTable = ({ user, onViewHistory }) => {
                     <td>{c.patient.name}</td>
                     {/* <td>{c.certificateDetails?.firstCertificateDate}</td> */}
                     <td>{getStatusBadge(c.status)}</td>
-
+                    <td>{getStatusBadge(c.spellStatus)}</td>
                     {isDoctor &&
-                      !(
-                        c.status === "APPROVED" ||
-                        c.status === "REJECTED"
-                      ) && (
+                      !(c.status === "APPROVED" || c.status === "REJECTED") && c.spellStatus !== "CLOSED" ? (
                         <td>
                           {/* {r.referralStatus != "PARTIAL_APPROVED" && ( */}
-                            <FaUserEdit
-                              onClick={() => handleEdit(c)}
-                              style={{
-                                cursor: "pointer",
-                                color: "#ffc106",
-                                marginRight: "12px",
-                                fontSize: "18px",
-                              }}
-                              title="Edit"
-                            />
-                          {/* )} */}
-
-                          {/* <TiTick
+                          <FaUserEdit
                             onClick={() => handleEdit(c)}
                             style={{
                               cursor: "pointer",
-                              color: "#28a745",
+                              color: "#ffc106",
                               marginRight: "12px",
                               fontSize: "18px",
                             }}
-                            title="Approve"
+                            title="Edit"
                           />
-
-                          <MdCancel
-                            onClick={() => handleEdit(c)}
-                            style={{
-                              cursor: "pointer",
-                              color: "#dc3545",
-                              fontSize: "18px",
-                            }}
-                            title="Reject"
-                          /> */}
                         </td>
+                      ) : (
+                        (c.status === "APPROVED" || c.status === "REJECTED" || c.spellStatus === "CLOSED") && (
+                          <td className="my-auto">
+                            <RiErrorWarningFill color="#9c231c" /> No action
+                            required.
+                          </td>
+                        )
                       )}
-                    {isDoctor &&
+                    {/* {isDoctor &&
                       (c.status === "APPROVED" ||
                         c.status === "REJECTED") && (
                         <td className="my-auto">
                           <RiErrorWarningFill color="#9c231c" /> No action
                           required.
                         </td>
-                      )}
+                      )} */}
                   </tr>
                 ))}
               </tbody>

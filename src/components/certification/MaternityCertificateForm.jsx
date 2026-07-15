@@ -12,6 +12,7 @@ import { useAlert } from "./../alert/AlertContext";
 
 const INITIAL_FORM_DATA = {
   durationOfPregnancy: "",
+  certificateNumber: null,
   certificateType: "MATERNITY",
   certificateSubType: "",
 
@@ -128,6 +129,7 @@ export default function MaternityCertificateForm({ patient, certificateData, mod
   const buildPayload = () => {
     const payload = {
       id: certificateData?.id || null,
+      certificateNumber: formData.certificateNumber || null,
       certificateType: formData.certificateType || (editMode ? certificateData?.certificateType : ""),
       certificateSubType: formData.certificateSubType || (editMode ? certificateData?.spellType : ""),
       status: "IN_PROGRESS",
@@ -207,6 +209,7 @@ export default function MaternityCertificateForm({ patient, certificateData, mod
     if (!data) return INITIAL_FORM_DATA;
 
     return {
+      certificateNumber: data.certificateNumber || null,
       certificateType: data.certificateType || "",
       certificateSubType: data.certificateSubType || "",
 
@@ -264,8 +267,8 @@ export default function MaternityCertificateForm({ patient, certificateData, mod
 
       const res = await createMedicalMaternityCertificate(payload);
       if (res.success) {
-        payload.certificateNumber = res.data.certificateNumber;
-        payload.id = res.data.id;
+        // payload.certificateNumber = res.data.certificateNumber;
+        // payload.id = res.data.id;
         // const response = await generateCertificate(payload);
         // const blob = new Blob([response], {
         //   type: "application/pdf",
@@ -295,6 +298,7 @@ export default function MaternityCertificateForm({ patient, certificateData, mod
     setLoading(true);
     const payload = buildPayload();
     payload.status = status; // set status to the provided value
+    payload.processedBy = user.fullName;
     // console.log("REQUEST PAYLOAD => ", payload);
 
     try {
@@ -356,7 +360,14 @@ export default function MaternityCertificateForm({ patient, certificateData, mod
                 borderBottom: "2px solid #9D231E",
               }}
             >
-              Certificate Details
+              Certificate Details &nbsp;
+              {formData.certificateNumber ? (
+                <span>
+                  [Certificate No. <strong>{formData.certificateNumber}</strong>]
+                </span>
+              ) : (
+                ''
+              )}
             </h6>
           </div>
           <div className="col-md-4">

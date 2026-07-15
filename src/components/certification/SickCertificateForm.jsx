@@ -40,6 +40,7 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
   // const certificateData = location?.state?.patient;
 
   const [formData, setFormData] = useState({
+    certificateNumber: null,
     certificateType: "",
     spellType: "",
     leaveFrom: "",
@@ -47,6 +48,7 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
     followUpDate: "",
     fitDate: "",
     remarks: "",
+    remarksId: "",
     additionalRemarks: "",
     hospitalization: "",
     doa: "",
@@ -93,12 +95,13 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
 
   // To reset certificate & spell type when patient changes
   useEffect(() => {
+    if (certificateData) return;
     setFormData((prev) => ({
       ...prev,
       certificateType: "",
       spellType: "",
     }));
-  }, [patient]);
+  }, [patient, certificateData]);
 
   const fetchPrevious = async () => {
     if (!patient) return;
@@ -107,6 +110,11 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
       if (res.success && res.data.length != 0) {
         setPreviousCert(res.data);
 
+        if (certificateData) return; // preserve existing certificate leave values when editing
+
+        if (res.data[0].certificateType === "MATERNITY")
+          return; // skip auto-filling for maternity certificates as they don't have leave details.
+        
         // Auto-set leaveFrom = next day of previous Leave To
         const date = calculateLeaveFrom(res.data[0].leaveDetails.leaveTo);
         setFormData((prev) => ({
@@ -123,69 +131,75 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
   };
 
   const handleSpellType = async (value) => {
-    if (!rules.allowedSpellTypes?.includes(value)) {
+    const certType = formData.certificateType;
+    const isAllowedSpell = rules.allowedSpellTypes?.includes(value);
+
+    if (!isAllowedSpell) {
       await alert(
         "Selected certificate type does not allow the chosen spell type. Please select a valid combination.",
         "warning",
       );
-      setFormData({ ...formData, spellType: "" });
+      setFormData((prev) => ({ ...prev, spellType: "" }));
       return;
     }
 
-    if (
-      (formData.certificateType === "INTERMEDIATE" ||
-        formData.certificateType === "SPECIAL_INTERMEDIATE" ||
-        formData.certificateType === "FINAL") &&
-      previousCert.length <= 0
-    ) {
+    const isIntermediateType = [
+      "INTERMEDIATE",
+      "SPECIAL_INTERMEDIATE",
+      "FINAL",
+    ].includes(certType);
+
+    if (isIntermediateType && previousCert.length === 0) {
       await alert(
-        "Selected certificate type does not have previous certificates in curent spell. Please try with FIRST or FIRST & FINAL certificate.",
+        "Selected certificate type does not have previous certificates in current spell. Please try with FIRST or FIRST & FINAL certificate.",
         "warning",
       );
-      setFormData({ ...formData, spellType: "" });
+      setFormData((prev) => ({ ...prev, spellType: "" }));
       return;
     }
 
-    if (
-      (formData.certificateType === "FIRST" ||
-        formData.certificateType === "FIRST_FINAL") &&
-      previousCert[0]?.spellStatus === "ACTIVE"
-    ) {
+    const isFirstType = ["FIRST", "FIRST_FINAL"].includes(certType);
+    const hasActivePreviousSpell = previousCert[0]?.spellStatus === "ACTIVE";
+
+    if (isFirstType && hasActivePreviousSpell) {
       const confirmed = await confirm(
-        `Before Issuing another new First/First and Final Certificate, Please Close Previous spell/Opened Certificate, 
-        \nDo You want to Generate a new certificate? 
-        \n \n Caution: Clicking 'Ok' will force close the previously opened certificate`,
+        `Before issuing another new First/First and Final Certificate, please close the previous spell/open certificate.
+
+        Do you want to generate a new certificate?
+
+        Caution: Clicking 'Ok' will force close the previously opened certificate.`,
         "warning",
       );
+
       if (!confirmed) {
-        setFormData({ ...formData, spellType: "" });
+        setFormData((prev) => ({ ...prev, spellType: "" }));
         return;
-      } else {
-        if (
-          await confirm(
-            "Are you sure you want to close all existing certificates in current spell?",
-          )
-        )
-          updateExistingCertificates(patient.ipNumber);
-        else {
-          setFormData({ ...formData, spellType: "" });
-          return;
-        }
       }
+
+      const closeConfirmed = await confirm(
+        "Are you sure you want to close all existing certificates in the current spell?",
+      );
+
+      if (!closeConfirmed) {
+        setFormData((prev) => ({ ...prev, spellType: "" }));
+        return;
+      }
+
+      await updateExistingCertificates(patient.ipNumber);
     }
-    // this is to ensure that the first certificate date remains the same for all certificates in the same spell if we have previous certificates.
+
     if (previousCert.length > 0) {
       const firstCertificateDate =
         previousCert[0]?.certificateDetails?.firstCertificateDate;
-      setFormData({
-        ...formData,
+      setFormData((prev) => ({
+        ...prev,
         spellType: value,
-        firstCertificateDate: firstCertificateDate,
-      });
+        firstCertificateDate,
+      }));
       return;
     }
 
-    setFormData({ ...formData, spellType: value });
+    setFormData((prev) => ({ ...prev, spellType: value }));
   };
 
   const updateExistingCertificates = async (ipNumber) => {
@@ -238,6 +252,8 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
     setLoading(true);
     const payload = buildPayload();
     payload.status = "APPROVED"; // set status to APPROVED for approval action
+    payload.processedBy = user.fullName;
+    console.log(payload);
     
     try {
       if (
@@ -307,7 +323,7 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
       )
         return;
 
-      const res = await updateMedicalCertificate(payload);
+      const res = await updateSickCertificate(payload);
       await alert(
           `Sick certificate ${res.data.certificateNumber} rejected successfully.`,
           "success",
@@ -328,6 +344,7 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
       );
     setLoading(true);
     const payload = buildPayload();
+    console.log(payload);
     
     try {
       if (
@@ -337,8 +354,8 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
 
       const res = await createMedicalCertificate(payload);
       if (res.success) {
-        payload.certificateNumber = res.data.certificateNumber;
-        payload.id = res.data.id;
+        // payload.certificateNumber = res.data.certificateNumber;
+        // payload.id = res.data.id;
         setFormData({
           certificateType: "",
           spellType: "",
@@ -369,6 +386,7 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
           Note: Pending for doctor's approval. You can view the certificate in the history modal.`,
           "success",
         );
+        navigate("/medical-certificate", { state: user});
         // setPreviousCert(res.data); // to ensure history modal shows the newly created certificate when opened immediately after creation
       } else {
         await alert(
@@ -386,6 +404,7 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
   const buildPayload = () => {
     return {
       id: certificateData?.id || null,
+      certificateNumber: formData.certificateNumber || null,
       certificateType: formData.certificateType || (editMode ? certificateData?.certificateType : ""),
       spellType: formData.spellType || (editMode ? certificateData?.spellType : ""),
       status: "IN_PROGRESS",
@@ -426,6 +445,7 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
         fitDate: formData.fitDate,
         issueESICMed11: formData.issueESICMed11,
         remarks: {
+          remarksId: formData.remarksId,
           remarks: formData.remarks,
           additionalRemarks: formData.additionalRemarks,
         },
@@ -435,6 +455,7 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
 
   const buildFormData = (data) => {
     return {
+      certificateNumber: data.certificateNumber || null,
       certificateType: data?.certificateType || "",
       spellType: data?.spellType || "",
 
@@ -475,6 +496,8 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
       fitDate: data?.leaveDetails?.fitDate || "",
 
       issueESICMed11: data?.leaveDetails?.issueESICMed11 || false,
+
+      remarksId: data?.leaveDetails?.remarks?.remarksId || "",
 
       remarks: data?.leaveDetails?.remarks?.remarks || "",
 
@@ -533,11 +556,13 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
     const days = formData.leavesRequired || rules.eligibleLeaves;
 
     const leaveTo = calculateLeaveTo(leaveFrom, days);
+    const followUpDate = calculateFollowUpDate(leaveTo, 1); 
 
     setFormData({
       ...formData,
       leaveFrom,
       leaveTo,
+      followUpDate
     });
   };
 
@@ -618,8 +643,7 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
                   setShowHistory(true);
                 }}
               >
-                <TbCertificate size={20} className="mb-1" /> View Previous
-                Certificate
+                <TbCertificate size={20} className="mb-1" /> Current Spell Certificates
               </button>
             </div>
           </div>
@@ -636,7 +660,14 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
                   borderBottom: "2px solid #9D231E",
                 }}
               >
-                Certificate Details
+                Certificate Details &nbsp;
+                {formData.certificateNumber ? (
+                <span>
+                  [Certificate No. <strong>{formData.certificateNumber}</strong>]
+                </span>
+              ) : (
+                ''
+              )}
               </h6>
               {/* Diagnosis details */}
               <div className="row g-3 mt-2">
@@ -868,6 +899,7 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
                   /> */}
 
                   <SnomedSearch
+                    initialValue={formData.diseaseDiagnosis}
                     onSelect={(data) => {
                       setFormData({
                         ...formData,
@@ -1036,42 +1068,45 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
                 <label>Remarks</label>
                 <select
                   className="form-select"
-                  value={formData.remarks}
-                  onChange={(e) =>
-                    setFormData({ ...formData, remarks: e.target.value })
-                  }
+                  value={formData.remarksId}
+                  onChange={(e) => {
+                    const selectedText = e.target.options[e.target.selectedIndex].text;
+                    setFormData({ ...formData, remarksId: e.target.value, remarks: selectedText });
+                  }}
                 >
                   <option value="Select">Select</option>
-                  <option value="Deliberately avoiding operation and prolonging incapacity from">
+                  <option value="0">
                     Deliberately avoiding operation and prolonging incapacity
                     from
                   </option>
-                  <option value="Failed to attend dispensary on">
+                  <option value="1">
                     Failed to attend dispensary on
                   </option>
-                  <option value="Failed to attend dispensary on And condition aggravated">
+                  <option value="2">
                     Failed to attend dispensary on And condition aggravated
                   </option>
-                  <option value="Has attended Mobile dispensary">
+                  <option value="3">
                     Has attended Mobile dispensary
                   </option>
-                  <option value="Has been refered to Hospital for admission">
+                  <option value="4">
                     Has been refered to Hospital for admission
                   </option>
-                  <option value="IP has been found to be sick from previous day">
+                  <option value="5">
                     IP has been found to be sick from previous day
                   </option>
-                  <option value="Last attended dispensary on">
+                  <option value="6">
                     Last attended dispensary on
                   </option>
-                  <option value="NA - Needed abstention">
+                  <option value="7">
                     NA - Needed abstention
                   </option>
-                  <option value="No Remarks">No Remarks</option>
-                  <option value="PNR - Progress Not Retarded/Deteriorated">
+                  <option value="8">
+                    No Remarks
+                  </option>
+                  <option value="9">
                     PNR - Progress Not Retarded/Deteriorated
                   </option>
-                  <option value="PR - Progress Retarded/Deteriorated">
+                  <option value="10">
                     PR - Progress Retarded/Deteriorated
                   </option>
                 </select>
@@ -1159,13 +1194,25 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
           {/* Actions */}
           <div className="mt-3 text-end">
             {!editMode && (
-              <button
-                className="btn btn-esic"
-                disabled={!isFormValid()}
-                onClick={() => handleSubmit()}
-              >
-                Create & Generate Certificate
-              </button>
+              <span className="d-flex gap-2 justify-content-end">
+                <button
+                  className="btn btn-esic"
+                  disabled={!isFormValid()}
+                  onClick={() => handleSubmit()}
+                >
+                  Create & Generate Certificate
+                </button>
+
+                <button
+                    className="btn btn-esic"
+                    // disabled={!isFormValid()}
+                    onClick={() =>
+                      navigate("/medical-certificate", { state: user })
+                    }
+                  >
+                    Back
+                  </button>
+                </span>
             )}
             {editMode && (
               <span className="d-flex gap-2 justify-content-end">
