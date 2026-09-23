@@ -49,15 +49,20 @@ const PrescriptionForm = () => {
   const [canSubmit, setCanSubmit] = useState(false);
 
   useEffect(() => {
-    setCanSubmit(
-      (!!patient &&
-        (clinical.symptoms || "").trim().length > 0 &&
-        (clinical.examFindings || "").trim().length > 0 &&
-        (clinical.bp || "").trim().length > 0 &&
-        (clinical.pulseRate || "").trim().length > 0 &&
-        (clinical.diagnosis || "").trim().length > 0) || (file !== null && clinical.remarks.trim().length > 0)
-    );
-  }, [patient, clinical, file]);
+    const clinicalValid =
+      !!patient &&
+      (clinical.symptoms || "").trim().length > 0 &&
+      (clinical.examFindings || "").trim().length > 0 &&
+      (clinical.bp || "").trim().length > 0 &&
+      (clinical.pulseRate || "").trim().length > 0 &&
+      (clinical.diagnosis || "").trim().length > 0 &&
+      selectedLabTests.length > 0 &&
+      selectedDrugs.length > 0;
+
+    const uploadValid = file !== null && (clinical.remarks || "").trim().length > 0;
+
+    setCanSubmit(clinicalValid || uploadValid);
+  }, [patient, clinical, file, selectedLabTests, selectedDrugs]);
 
   const fileInputRef = React.useRef(null);
 
@@ -144,26 +149,16 @@ const PrescriptionForm = () => {
           });
           await handleUpload(response.data.id, file);
         } else {
-          logger.warn("Treatment record not found for upload", {
-            patientId: patient.id,
-          });
           setSaving(false);
-          // showToast("Prescription not saved as there is no treatment record created earlier. Please create prescription and try again.", "warning");
           await alert("Prescription not saved as there is no treatment record created earlier. Please create prescription and try again.", "warning");
+          return;
         }
       } 
     }catch (error) {
       setSaving(false);
-      logger.error("Document upload failed before submission", error, {
-        patientId: patient?.id,
-      });
       // showToast("Error uploading file: " + error.message, "error");
-      await alert("Error uploading file: " + error.message, "error");
-    }finally{
-      navigate("/ip-list");
-      logger.debug("Navigated to IP list after upload attempt", {
-        patientId: patient?.id,
-      });
+      await alert("Error uploading file: " + error.response.data.message, "danger");
+      return;
     }
     // Payload ready for backend
     const payload = {
@@ -190,22 +185,14 @@ const PrescriptionForm = () => {
       labTests: selectedLabTests,
       edlDrugs: selectedDrugs,
     };
-    logger.debug("Prescription payload prepared", {
-      patientId: payload.patientId,
-      labTests: selectedLabTests.length,
-      drugs: selectedDrugs.length,
-    });
 
     try {
-      logger.info("Calling savePrescription API", {
-        patientId: payload.patientId,
-      });
       const response = await savePrescription(payload);
       if(response.data.success){
         setSaving(false);
         // showToast("Prescription saved successfully!", "success");
         await alert("Prescription saved successfully!", "success");
-        navigate("/ip-list");
+        // navigate("/ip-list");
         logger.info("Prescription save succeeded", {
           patientId: payload.patientId,
         });
@@ -222,6 +209,11 @@ const PrescriptionForm = () => {
       });
       // showToast("Error saving prescription." + error, "error");
       await alert("Error saving prescription." + error, "error");
+    }finally{
+      navigate("/ip-list");
+      logger.debug("Navigated to IP list after upload attempt", {
+        patientId: patient?.id,
+      });
     }
   };
 
@@ -229,15 +221,9 @@ const PrescriptionForm = () => {
       try{
           const res = await uploadFile(treatmentId,file);
           showToast(res.data.message, "success");
-          logger.info("Upload completed", {
-            treatmentId,
-            fileName: file?.name,
-          });
       }catch(e){
-          logger.error("Upload failed inside helper", e, {
-            treatmentId,
-          });
-          showToast(e.response.data.message, "danger");
+          // showToast(e.response.data.message, "danger");
+          throw e;
       }
   }
 
@@ -345,7 +331,16 @@ const PrescriptionForm = () => {
                     className="form-control"
                     name="bp"
                     value={clinical.bp}
-                    onChange={handleClinicalChange}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const [numerator = '', denominator = ''] = value.split('/');
+                      const exceedsDigits = numerator.length > 3 || denominator.length > 3;
+                      if ((value === '' || /^\d*\/?(\d+)?$/.test(value)) && !exceedsDigits) {
+                        handleClinicalChange(e);
+                      } else if (exceedsDigits) {
+                        alert('Systolic or Diastolic values in BP cannot exceed more than three digits.');
+                      }
+                    }}
                     disabled={file}
                     placeholder="e.g., 120/80"
                   />
@@ -357,7 +352,15 @@ const PrescriptionForm = () => {
                     className="form-control"
                     name="pulseRate"
                     value={clinical.pulseRate}
-                    onChange={handleClinicalChange}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const exceedsDigits = value.length > 3;
+                      if ((value === '' || /^\d+$/.test(value)) && !exceedsDigits) {
+                        handleClinicalChange(e);
+                      } else if (exceedsDigits) {
+                        alert('Pulse rate cannot exceed three digits.');
+                      }
+                    }}
                     disabled={file}
                     placeholder="e.g., 72"
                   />
@@ -436,7 +439,7 @@ const PrescriptionForm = () => {
               ref={fileInputRef}
               type="file"
               className="form-control"
-              accept=".pdf,.png,.jpg,.jpeg"
+              accept="application/pdf,.pdf"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
             />
 
@@ -483,7 +486,7 @@ const PrescriptionForm = () => {
               value={clinical.remarks}
               onChange={handleClinicalChange}
               disabled={!file}
-              placeholder="Note: Remarks is mandatory when uploading prescription file."
+              placeholder="Note: Remarks are mandatory only when uploading prescription file."
               style={{ fontSize: "14px" }}
             />
           </div>
@@ -576,39 +579,45 @@ const MultiSelectSearch = ({
         />
 
         {/* Dropdown */}
-        {showDropdown && filtered.length > 0 && (
+        {showDropdown && (filtered.length > 0 || query.trim().length > 0) && (
           <div
             className="position-absolute w-100 bg-white border rounded shadow-sm mt-1"
             style={{ zIndex: 50, maxHeight: "220px", overflowY: "auto" }}
           >
-            {filtered.map((item) => {
-              const alreadySelected = isSelected(item.id);
+            {filtered.length > 0 ? (
+              filtered.map((item) => {
+                const alreadySelected = isSelected(item.id);
 
-              return (
-                <div
-                  key={item.id}
-                  className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom"
-                  style={{
-                    cursor: alreadySelected ? "not-allowed" : "pointer",
-                  }}
-                  onMouseDown={() => {
-                    if (!alreadySelected) handleSelect(item);
-                  }}
-                >
-                  <div style={{ fontSize: "14px" }}>{item.name}</div>
+                return (
+                  <div
+                    key={item.id}
+                    className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom"
+                    style={{
+                      cursor: alreadySelected ? "not-allowed" : "pointer",
+                    }}
+                    onMouseDown={() => {
+                      if (!alreadySelected) handleSelect(item);
+                    }}
+                  >
+                    <div style={{ fontSize: "14px" }}>{item.name}</div>
 
-                  {alreadySelected ? (
-                    <span className="text-muted" style={{ fontSize: "13px" }}>
-                      Added
-                    </span>
-                  ) : (
-                    <span className="text-primary" style={{ fontSize: "13px" }}>
-                      Add
-                    </span>
-                  )}
-                </div>
-              );
-            })}
+                    {alreadySelected ? (
+                      <span className="text-muted" style={{ fontSize: "13px" }}>
+                        Added
+                      </span>
+                    ) : (
+                      <span className="text-primary" style={{ fontSize: "13px" }}>
+                        Add
+                      </span>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="px-3 py-2 text-muted" style={{ fontSize: "14px" }}>
+                No results found
+              </div>
+            )}
           </div>
         )}
       </div>

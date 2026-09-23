@@ -32,7 +32,8 @@ export const fetchPhotoUrl = async (payload) => {
     logger.error("Fetching photo URL failed", error, {
       beneficiaryId: payload?.beneficiaryId,
     });
-    throw error;
+    // throw error; // Error is not throw as user may not have photo, so giving option to manually upload, hence returning null instead of throwing error
+    return null;
   }
 };
 

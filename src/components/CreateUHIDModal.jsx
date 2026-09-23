@@ -25,7 +25,7 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
     insurenceSeq: patient?.ipListId || "0",
     relationship: "",
     ageUOM: "Years",
-    gender: patient?.sex || "",
+    gender: patient?.sex === "M" || patient?.sex === "Male" ? "Male" : patient?.sex === "F" || patient?.sex === "Female" ? "Female" : "",
     marstatus: patient?.marstatus === "Married" ? "Married" : patient?.marstatus === "Unmarried" ? "Single" : "",
     titleName: "",
     address1: "",
@@ -340,10 +340,18 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
               <label className="col-md-2 col-form-label">Gender<span style={{color: "red"}}>*</span></label>
               <div className="col-md-4">
               <select
-              className="form-select"
-              value={formData.gender}
-              disabled={formData.gender}
-              onChange={(e)=>setFormData({...formData,gender:e.target.value})}
+                className="form-select"
+                value={(() => {
+                  const gender = String(formData.gender || '').trim().toLowerCase();
+                  if (gender === 'm' || gender === 'male') return 'Male';
+                  if (gender === 'f' || gender === 'female') return 'Female';
+                  return gender ? 'Other' : '';
+                })()}
+                disabled={formData.gender}
+                // onChange={(e)=>setFormData({
+                //   ...formData,
+                //   gender: e.target.value === 'Male' ? 'Male' : e.target.value === 'Female' ? 'Female' : e.target.value
+                // })}
               >
               <option value="">Select</option>
               <option value="Male">Male</option>
@@ -500,13 +508,15 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
                   <label className="col-md-2 col-form-label">Pincode <span style={{color: "red"}}>*</span></label>
                   <div className="col-md-4">
                     <input
-                      type="number"
-                      minLength={6}
+                      type="text"
+                      inputMode="numeric"
                       maxLength={6}
                       className="form-control"
-                      onChange={(e) =>
-                        setFormData({ ...formData, zipCode: e.target.value })
-                      }
+                      value={formData.zipCode}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, "");
+                        setFormData({ ...formData, zipCode: value });
+                      }}
                     />
                   </div>
 

@@ -45,6 +45,31 @@ export default function CreateMedicalCertification() {
           await alert("No records found for the given IP.", "warning");
           return;
         }
+
+        if(res.data.data.uHID === null || res.data.data.uHID === ""){
+          await alert("Provided IP doesn't have UHID. Kindly create UHID before proceeding to create medical certificate.", "warning");
+          return;
+        }
+
+        const sex = String(res.data.data.personalDetails[0].sex || "")
+          .trim()
+          .toLowerCase();
+        if (
+          certificateCategory === "MATERNITY" &&
+          (sex === "m" || sex === "male")
+        ) {
+          await alert(
+            "Maternity certificate cannot be created for a male patient.",
+            "warning",
+          );
+          return;
+        }
+
+        if(res.data.data?.statusOfIP == null || String(res.data.data?.statusOfIP).trim().toLowerCase() === "no"){
+          await alert("Patient eligibilty is invalid, cannot proceed for certificate creation. Please contact ESIC.", "danger");
+          return;
+        }
+
         const selfMember = {
           name: res.data.data.personalDetails[0].name,
           relationship: "Self",

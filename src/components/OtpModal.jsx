@@ -45,7 +45,7 @@ const OtpModal = ({ userId, otpData, onClose }) => {
     const finalOtp = otp.join("");
     if (finalOtp.length !== 6) {
       logger.warn("OTP length invalid", { enteredLength: finalOtp.length });
-      return setError("Please enter 4-digit OTP");
+      return setError("Please enter 6-digit OTP");
     }
 
     try {
@@ -79,10 +79,14 @@ const OtpModal = ({ userId, otpData, onClose }) => {
           userId,
           message: res.data.message,
         });
+        setOtp(["", "", "", "", "", ""]);
+        inputsRef.current[0]?.focus();
         setError(res.data.message);
       }
     } catch (err) {
       logger.error("OTP validation failed", err, { userId });
+      setOtp(["", "", "", "", "", ""]);
+      inputsRef.current[0]?.focus();
       setError("Invalid or expired OTP");
     } finally {
       setLoading(false);

@@ -110,13 +110,13 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
 
           const res = await fetchPhotoUrl(payload);
 
-          if (res.success && res.data.MessageCode === '1001') {
+          if (res?.success && res.data?.MessageCode === '1001') {
 
             setFormData((prev) => ({
               ...prev,
               beneficiary: {
                 ...prev.beneficiary,
-                patientPhotoId: res.data.Photopath, // ✅ use correct field
+                patientPhotoId: res.data.base64string, // ✅ use correct field
               },
             }));
 
@@ -183,27 +183,34 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
   const validateForm = (data = formData) => {
       const errors = [];
 
+      const isEmpty = (value) => {
+        if (value === null || value === undefined) return true;
+        if (typeof value === "string") return value.trim().length === 0;
+        return false;
+      };
+
       // Beneficiary validations 
-      if (!formData?.beneficiary?.patientPhotoId) errors.push("Beneficiary Photo is required");
-      if (!formData?.beneficiary?.beneficiaryId) errors.push("Beneficiary ID is required");
-      if (!formData?.beneficiary?.beneficiaryName) errors.push("Beneficiary Name is required");
-      if (!formData?.beneficiary?.registeredMobileNumber) errors.push("Registered Mobile is required");
-      if (!formData?.beneficiary?.attendantName) errors.push("Attendant Name is required");
-      if (!formData?.beneficiary?.attendantRelation) errors.push("Attendant Relation is required");
+      if (isEmpty(data?.beneficiary?.patientPhotoId)) errors.push("Beneficiary Photo is required");
+      if (isEmpty(data?.beneficiary?.beneficiaryId)) errors.push("Beneficiary ID is required");
+      if (isEmpty(data?.beneficiary?.beneficiaryName)) errors.push("Beneficiary Name is required");
+      if (isEmpty(data?.beneficiary?.registeredMobileNumber)) errors.push("Registered Mobile is required");
+      else if (String(data.beneficiary.registeredMobileNumber).length !== 10) errors.push("Registered Mobile must be 10 digits");
+      if (isEmpty(data?.beneficiary?.attendantName)) errors.push("Attendant Name is required");
+      if (isEmpty(data?.beneficiary?.attendantRelation)) errors.push("Attendant Relation is required");
 
       // Referral Details validations
-      if (!formData.referralDetails.referralNature) errors.push("Referral Nature is required");
-      if (!formData.referralDetails.referralType) errors.push("Referral Type is required");
-      if (!formData.referralDetails.referralReason) errors.push("Referral Reason is required");
-      if (!formData.referralDetails.referralCircumstances.length) errors.push("Referral Circumstances is required");
-      if (!formData.referralDetails.referredHospitalName) errors.push("Referred Hospital is required");
-      if (!formData.referralDetails.referringDoctorName) errors.push("Referring Doctor is required");
+      if (isEmpty(data?.referralDetails?.referralNature)) errors.push("Referral Nature is required");
+      if (isEmpty(data?.referralDetails?.referralType)) errors.push("Referral Type is required");
+      if (isEmpty(data?.referralDetails?.referralReason)) errors.push("Referral Reason is required");
+      if (!data?.referralDetails?.referralCircumstances?.length) errors.push("Referral Circumstances is required");
+      if (isEmpty(data?.referralDetails?.referredHospitalName)) errors.push("Referred Hospital is required");
+      if (isEmpty(data?.referralDetails?.referringDoctorName)) errors.push("Referring Doctor is required");
 
       // Diagnosis validations
-      if (!formData.referralDetails.diagnoses?.[0].snomedDiagnosis) errors.push("SNOMED Diagnosis is required");
-      if (!formData.referralDetails.diagnoses?.[0].icdCode) errors.push("ICD Code is required");
-      if (!formData.referralDetails.diagnoses?.[0].remark) errors.push("Diagnosis Remark is required");
-      if (!formData.referralDetails.clinicalRemarks) errors.push("Clinical Remarks is required");
+      if (isEmpty(data?.referralDetails?.diagnoses?.[0]?.snomedDiagnosis)) errors.push("SNOMED Diagnosis is required");
+      if (isEmpty(data?.referralDetails?.diagnoses?.[0]?.icdCode)) errors.push("ICD Code is required");
+      if (isEmpty(data?.referralDetails?.diagnoses?.[0]?.remark)) errors.push("Diagnosis Remark is required");
+      if (isEmpty(data?.referralDetails?.clinicalRemarks)) errors.push("Clinical Remarks is required");
 
       if (errors.length > 0) {
         errors.forEach((error) => showToast(error, "danger"));
@@ -376,11 +383,20 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                 {/* MOBILE */}
 
                 <div className="col-md-6">
-                  <label><span style={{"color": "red"}}>*</span> Registered Mobile</label>
+                  <label><span style={{"color": "red"}}>*</span> Registered Mobile (Starts with 6/7/8/9)</label>
                   <input
+                    type="text"
+                    maxLength={10}
+                    inputMode="numeric"
                     className="form-control"
                     value={formData.beneficiary.registeredMobileNumber}
-                    onChange={(e)=>handleChange(["beneficiary","registeredMobileNumber"],e.target.value)}
+                    pattern="[6-9][0-9]{9}"
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      if (value === "" || /^[6-9]/.test(value)) {
+                        handleChange(["beneficiary", "registeredMobileNumber"], value);
+                      }
+                    }}
                   />
                 </div>
 
@@ -430,6 +446,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                         value="ROUTINE"
                         checked={formData.referralDetails.referralNature === "ROUTINE"}
                         onChange={(e) => handleChange(["referralDetails","referralNature"], e.target.value)}
+                        style={{outline: "0.1em solid #742902"}}
                       />
                       <label className="form-check-label" htmlFor="referralNatureRoutine">
                         Routine
@@ -444,6 +461,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                         value="EMERGENCY"
                         checked={formData.referralDetails.referralNature === "EMERGENCY"}
                         onChange={(e) => handleChange(["referralDetails","referralNature"], e.target.value)}
+                        style={{outline: "0.1em solid #742902"}}
                       />
                       <label className="form-check-label" htmlFor="referralNatureEmergency">
                         Emergency
@@ -466,6 +484,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                         value="IPD"
                         checked={formData.referralDetails.referralType === "IPD"}
                         onChange={(e) => handleChange(["referralDetails","referralType"], e.target.value)}
+                        style={{outline: "0.1em solid #742902"}}
                       />
                       <label className="form-check-label" htmlFor="referralTypeIpd">
                         IPD
@@ -480,6 +499,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                         value="OPD"
                         checked={formData.referralDetails.referralType === "OPD"}
                         onChange={(e) => handleChange(["referralDetails","referralType"], e.target.value)}
+                        style={{outline: "0.1em solid #742902"}}
                       />
                       <label className="form-check-label" htmlFor="referralTypeOpd">
                         OPD
@@ -501,6 +521,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                         value="LACK_OF_BED"
                         checked={formData.referralDetails.referralCircumstances.includes("LACK_OF_BED")}
                         onChange={(e) => handleChange(["referralDetails","referralCircumstances"], [e.target.value])}
+                        style={{outline: "0.1em solid #742902"}}
                       />
                       <label className="form-check-label" htmlFor="circumstancesLackBed">
                         Lack of Bed
@@ -515,6 +536,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                         value="LONG_WAITING_LIST"
                         checked={formData.referralDetails.referralCircumstances.includes("LONG_WAITING_LIST")}
                         onChange={(e) => handleChange(["referralDetails","referralCircumstances"], [e.target.value])}
+                        style={{outline: "0.1em solid #742902"}}
                       />
                       <label className="form-check-label" htmlFor="circumstancesLongWaitingList">
                         Long Waiting List
@@ -529,6 +551,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                         value="LACK_OF_EQUIPMENT"
                         checked={formData.referralDetails.referralCircumstances.includes("LACK_OF_EQUIPMENT")}
                         onChange={(e) => handleChange(["referralDetails","referralCircumstances"], [e.target.value])}
+                        style={{outline: "0.1em solid #742902"}}
                       />
                       <label className="form-check-label" htmlFor="circumstancesLackEquipment">
                         Lack of Equipment
@@ -543,6 +566,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                         value="LACK_OF_EXPERTS"
                         checked={formData.referralDetails.referralCircumstances.includes("LACK_OF_EXPERTS")}
                         onChange={(e) => handleChange(["referralDetails","referralCircumstances"], [e.target.value])}
+                        style={{outline: "0.1em solid #742902"}}
                       />
                       <label className="form-check-label" htmlFor="circumstancesLackExperts">
                         Lack of Experts
@@ -557,6 +581,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                         value="LACK_OF_FACILITY"
                         checked={formData.referralDetails.referralCircumstances.includes("LACK_OF_FACILITY")}
                         onChange={(e) => handleChange(["referralDetails","referralCircumstances"], [e.target.value])}
+                        style={{outline: "0.1em solid #742902"}}
                       />
                       <label className="form-check-label" htmlFor="circumstancesLackFacility">
                         Lack of Facility
@@ -571,6 +596,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                         value="OTHERS"
                         checked={formData.referralDetails.referralCircumstances.includes("OTHERS")}
                         onChange={(e) => handleChange(["referralDetails","referralCircumstances"], [e.target.value])}
+                        style={{outline: "0.1em solid #742902"}}
                       />
                       <label className="form-check-label" htmlFor="circumstancesOthers">
                         Others
@@ -670,7 +696,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                 {/* DIAGNOSIS REMARK */}
 
                 <div className="col-md-12">
-                  <label>Diagnosis Remark</label>
+                  <label><span style={{"color": "red"}}>*</span> Diagnosis Remark</label>
 
                   <textarea
                     className="form-control"

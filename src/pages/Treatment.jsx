@@ -95,7 +95,7 @@ const Treatment = () => {
                 name: patient?.name,
             });
             // showToast("No UHID found for the dependent. please create uHID first and then try again.", "warning");
-            await alert("No UHID found for the dependent. please create uHID first and then try again.", "warning");
+            await alert("No UHID found for the dependent. please create UHID first and then try again.", "warning");
             return;
         }
         
@@ -179,7 +179,7 @@ const Treatment = () => {
     const handleReferral = () => {
 
         if(!patient.uHID){
-            alert("No UHID found for the dependent. please create uHID first and then try again.", "warning");
+            alert("No UHID found for the dependent. please create UHID first and then try again.", "warning");
             return;
         }
 
@@ -191,11 +191,17 @@ const Treatment = () => {
     };
 
     const handleUpload = async(treatmentId,file)=>{
+        if (!file || file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
+            await alert("Only PDF files can be uploaded.", "warning");
+            return;
+        }
+
         try{
             logger.info("Uploading treatment attachment from treatment view", {
                 treatmentId,
                 fileName: file?.name,
             });
+            
             const res = await uploadFile(treatmentId,file);
             // showToast(res.data.message, "success");
             await alert(res.data.message, "success");
@@ -393,6 +399,7 @@ const Treatment = () => {
                                                         <input
                                                             type="file"
                                                             className="form-control form-control-sm"
+                                                            accept="application/pdf,.pdf"
                                                             onChange={(e) =>
                                                                 handleUpload(h.treatment.id, e.target.files[0])
                                                             }

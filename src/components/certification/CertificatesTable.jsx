@@ -142,7 +142,7 @@ const CertificatesTable = ({ user, onViewHistory }) => {
   const totalPages = Math.ceil(filtered.length / recordsPerPage);
 
   return (
-    <div className="card text-esic">
+    <div className="card text-esic mb-4">
       <div className="card-header d-flex justify-content-between align-items-center">
         <div className="d-flex align-items-center gap-3">
           <h5 className="mb-0">Medical Certificate Requests</h5>

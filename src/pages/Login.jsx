@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { sendOtp, authenticate } from "../services/authService";
 import OtpModal from "../components/OtpModal";
 import { useNavigate } from "react-router-dom";
@@ -15,6 +15,10 @@ const Login = () => {
   const [showOtp, setShowOtp] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    localStorage.clear();
+  }, []);
 
   const handleLogin = async () => {
     if (!userId) return showToast("Enter Username", "warning");
@@ -50,6 +54,8 @@ const Login = () => {
       logger.debug("Login OTP flow completed", { userId });
     }
   };
+
+  
 
   // return (
   //   <div

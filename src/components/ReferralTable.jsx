@@ -268,7 +268,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
   const totalPages = Math.ceil(filtered.length / recordsPerPage);
 
   return (
-    <div className="card text-esic">
+    <div className="card text-esic mb-5">
       <div className="card-header d-flex justify-content-between align-items-center">
         <div className="d-flex align-items-center gap-3">
           <h5 className="mb-0">Patient Referral Requests</h5>
@@ -362,10 +362,14 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
                           <FaDownload title="Download" /> Download
                         </a>
                       ) : (
+                        r.referralStatus === "REJECTED" || r.referralStatus === "CREATED" ? (
+                          <span className="text-muted">No file</span>
+                        ) : (
+                          
                         <label style={{ cursor: "pointer", color: "#bb2d3c" }}>
                           <FaUpload title="Upload" /> Upload
                           <input
-                            disabled={r.referralStatus === "REJECTED"}
+                            disabled={r.referralStatus === "REJECTED" || r.referralStatus === "CREATED"}
                             type="file"
                             style={{ display: "none" }}
                             className="form-control form-control-sm"
@@ -383,7 +387,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
                             }}
                           />
                         </label>
-                      )}
+                      ))}
                     </td>
                     <td>{getStatusBadge(r.referralStatus)}</td>
 
@@ -393,7 +397,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
                         r.referralStatus === "REJECTED"
                       ) && (
                         <td>
-                          {/* {r.referralStatus != "PARTIAL_APPROVED" && ( */}
+                          {r.referralStatus != "PARTIAL_APPROVED" && (
                             <FaUserEdit
                               onClick={() => handleEdit(r)}
                               style={{
@@ -404,7 +408,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
                               }}
                               title="Edit"
                             />
-                          {/* )} */}
+                          )}
 
                           <TiTick
                             onClick={() => handleApprove(r)}

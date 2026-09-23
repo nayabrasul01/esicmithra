@@ -167,7 +167,7 @@ export default function SickCertificateForm({ patient, certificateData, mode }) 
 
         Do you want to generate a new certificate?
 
-        Caution: Clicking 'Ok' will force close the previously opened certificate.`,
+        Caution: Clicking 'Yes' will force close the previously opened certificate.`,
         "warning",
       );
 

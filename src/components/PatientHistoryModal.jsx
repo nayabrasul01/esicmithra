@@ -6,6 +6,7 @@ import { IoIosArrowDroprightCircle } from "react-icons/io";
 import { IoIosArrowDropleftCircle } from "react-icons/io";
 import { MdErrorOutline } from "react-icons/md";
 import { createLogger } from "../util/logger";
+import { useAlert } from "../components/alert/AlertContext";
 
 const logger = createLogger("PatientHistoryModal");
 
@@ -25,16 +26,35 @@ export default function PatientHistoryModal({
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
+  const { alert, confirm } = useAlert();
+
+  const handleClose = () => {
+    setSearchText("");
+    setFromDate("");
+    setToDate("");
+    setCurrentPage(1);
+    setExpandedId(null);
+    onClose?.();
+  };
+
+  const getToday = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   // ✅ Filtering logic
   const filteredData = useMemo(() => {
     // Slice the first item in historyData as the first item is the current treatment being added, not part of history
-    return historyData.slice(1).filter((item) => {
+    return historyData.slice(0).filter((item) => {
       const t = item.treatment;
       const createdDate = new Date(t.createdAt);
 
       // Date filtering
-      if (fromDate && createdDate < new Date(fromDate)) return false;
-      if (toDate && createdDate > new Date(toDate + "T23:59:59")) return false;
+      if (fromDate && createdDate <= new Date(fromDate)) return false;
+      if (toDate && createdDate >= new Date(toDate + "T23:59:59")) return false;
 
       // Search filtering
       if (searchText) {
@@ -116,7 +136,7 @@ const createFileLink = (blob, filename) => {
               <h5 className="modal-title fw-bold text-esic">
                 Patient History – {patient?.uhid}
               </h5>
-              <button className="btn-close" onClick={onClose}></button>
+              <button className="btn-close" onClick={handleClose}></button>
             </div>
 
             <div className="modal-body bg-white">
@@ -152,7 +172,19 @@ const createFileLink = (blob, filename) => {
                         type="date"
                         className="form-control"
                         value={fromDate}
-                        onChange={(e) => setFromDate(e.target.value)}
+                        max={getToday()}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val > getToday()) {
+                            alert("From Date cannot be in the future.", "warning");
+                            return;
+                          }
+                          if (toDate && val > toDate) {
+                            alert("From Date cannot be greater than To Date.", "warning");
+                            return;
+                          }
+                          setFromDate(val);
+                        }}
                       />
                     </div>
 
@@ -164,7 +196,19 @@ const createFileLink = (blob, filename) => {
                         type="date"
                         className="form-control"
                         value={toDate}
-                        onChange={(e) => setToDate(e.target.value)}
+                        max={getToday()}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val > getToday()) {
+                            alert("To Date cannot be in the future.", "warning");
+                            return;
+                          }
+                          if (fromDate && val < fromDate) {
+                            alert("To Date cannot be less than From Date.", "warning");
+                            return;
+                          }
+                          setToDate(val);
+                        }}
                       />
                     </div>
 

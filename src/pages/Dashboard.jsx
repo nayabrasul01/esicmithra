@@ -7,6 +7,7 @@ import { showToast } from '../util/toastUtil';
 import { createLogger } from "../util/logger";
 import { useAlert } from "./../components/alert/AlertContext";
 import axios from "axios";
+import API from "../services/commonRestService";
 
 import 'altcha';
 import "altcha/themes/business.css";
@@ -20,6 +21,7 @@ const Dashboard = () => {
   const [userData, setUserData] = useState(null);
   const userId = localStorage.getItem("userId");
   const [selected, setSelected] = useState(null);
+  const [statusOfIP, setStatusOfIP] = useState(null);
 
   const [list, setList] = useState([]);
   
@@ -77,6 +79,7 @@ const handleSearch = async (e) => {
             return;
           }
           setList(res.data.data.InsuredPersonFamilyDetails || []);
+          setStatusOfIP(res.data.data.statusOfIP);
 
           const selfMember = {
             name: res.data.data.personalDetails[0].name,
@@ -113,6 +116,10 @@ const handleSearch = async (e) => {
   }
 
   const goNext = () => {
+    if(statusOfIP == null || String(statusOfIP).trim().toLowerCase() === "no"){
+      alert("Patient eligibilty is invalid, cannot proceed for check-in. Please contact ESIC.", "danger");
+      return;
+    }
     selected.ipNumber = ipNumber;
     logger.info("Navigating to treatment", {
       ipNumber,
@@ -151,7 +158,7 @@ return (
         </div>
   
         <div className="col-md-3 col-sm-12 my-auto">
-          <altcha-widget type="switch" challenge= {import.meta.env.VITE_API_BASE_URL + "/altcha/challenge"} theme="business" ></altcha-widget>
+          <altcha-widget type="switch" challenge= {API.defaults.baseURL + "/altcha/challenge"} theme="business" ></altcha-widget>
         </div>
 
         <div className="d-flex col-md-5 col-sm-12 mb-2 gap-2">

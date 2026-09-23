@@ -4,8 +4,10 @@ import { createLogger } from "../util/logger";
 const logger = createLogger("APIClient");
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api",
-  // baseURL: "http://10.30.13.92:9092/api"
+  baseURL: import.meta.env.VITE_API_BASE_URL
+  // baseURL: "http://localhost:8080/api",  // localhost
+  // baseURL: "http://10.30.13.92:9092/api" // Direct Endpoint
+  // baseURL: "https://chcphcstag.esic.gov.in/api" // DNS Endpoint
 });
 
 API.interceptors.request.use((config) => {
