@@ -378,12 +378,19 @@ export default function MaternityCertificateForm({ patient, certificateData, mod
 
             <input
               type="number"
-              min="0"
+              inputMode="numeric"
+              min={1}
+              max={53}
               className="form-control"
               value={formData.durationOfPregnancy}
-              onChange={(e) =>
-                handleChange("durationOfPregnancy", e.target.value)
-              }
+              pattern="[1-5]?[0-9]"
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, "");
+
+                if (value === "" || (Number(value) >= 1 && Number(value) <= 53)) {
+                  handleChange("durationOfPregnancy", value);
+                }
+              }}
             />
           </div>
         </div>

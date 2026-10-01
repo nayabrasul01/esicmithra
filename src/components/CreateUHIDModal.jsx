@@ -390,7 +390,6 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
                     <select
                       className="form-select"
                       value={formData.marstatus}
-                      disabled={formData.marstatus}
                       onChange={(e)=>setFormData({...formData,marstatus:e.target.value})}
                     >
                       <option value="">Select</option>
