@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { showToast } from "../util/toastUtil";
 import { fetchPhotoUrl, createReferralRequest, fetchReferral, updateStatus, fetchReferrals } from "../services/referralService";
 import SnomedSearch from "../components/SnomedSearch";
@@ -16,6 +17,8 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
   const isDoctor = user?.type === "D";
   const [loader, setLoader] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(show);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsModalVisible(show);
@@ -169,6 +172,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
         //   "success"
         // );
         await alert(`Referral request created successfully. Referral ID: ${response.data}`, "success");
+        navigate("/home");
         onClose();
       } else {
         // showToast(response.message || "Failed to create referral", "danger");
@@ -208,7 +212,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
 
       // Diagnosis validations
       if (isEmpty(data?.referralDetails?.diagnoses?.[0]?.snomedDiagnosis)) errors.push("SNOMED Diagnosis is required");
-      if (isEmpty(data?.referralDetails?.diagnoses?.[0]?.icdCode)) errors.push("ICD Code is required");
+      // if (isEmpty(data?.referralDetails?.diagnoses?.[0]?.icdCode)) errors.push("ICD Code is required"); // Removed as per UAT testing.
       if (isEmpty(data?.referralDetails?.diagnoses?.[0]?.remark)) errors.push("Diagnosis Remark is required");
       if (isEmpty(data?.referralDetails?.clinicalRemarks)) errors.push("Clinical Remarks is required");
 
@@ -253,7 +257,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
     return newData;
   };
   
-  const handlePartialApprove = async () => {
+  const handleApprove = async () => {
 
     const updatedFormData = addPatientData(formData);
     setFormData(updatedFormData);
@@ -261,10 +265,11 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
     // Validate form data before submission
     if (!validateForm(updatedFormData)) return;
 
-    updatedFormData.status = "PARTIAL_APPROVED";
+    // updatedFormData.status = "PARTIAL_APPROVED";
+    updatedFormData.status = "APPROVED";
     updatedFormData.beneficiary.beneficiaryIpNumber = patient?.ipNumber;
 
-    if(!(await confirmAction(`Are you sure you want to partially approve this referral ${formData.referralId} ?`))) return;
+    if(!(await confirmAction(`Are you sure you want to approve this referral ${formData.referralId} request ?`))) return;
     
     try {
       setLoader(true);
@@ -273,7 +278,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
       // await handleSubmit("PARTIAL_APPROVED");
       if(res.success)
         // showToast(`Referral request with Referral ID: ${formData.referralId} partially approved`, "success");
-        await alert(`Referral request with Referral ID: ${formData.referralId} partially approved`, "success");
+        await alert(`Referral request with Referral ID: ${formData.referralId} approved successfully.`, "success");
       onClose();
     } catch (error) {
       // showToast(`Error when upadting status : ${error}.`, "danger");
@@ -424,7 +429,8 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                     <option value="FATHER">Father</option>
                     <option value="MOTHER">Mother</option>
                     <option value="SPOUSE">Spouse</option>
-                    <option value="CHILD">Child</option>
+                    <option value="SON">Son</option>
+                    <option value="DAUGHTER">Daughter</option>
                     <option value="SIBLING">Sibling</option>
                     <option value="RELATIVE">Relative</option>
                     <option value="FRIEND">Friend</option>
@@ -625,11 +631,16 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                 <div className="col-md-6">
                   <label><span style={{"color": "red"}}>*</span> Referred Hospital</label>
 
-                  <input
+                  <select
                     className="form-control"
                     value={formData.referralDetails.referredHospitalName}
                     onChange={(e)=>handleChange(["referralDetails","referredHospitalName"],e.target.value)}
-                  />
+                  >
+                    <option value="">Select a hospital</option>
+                    <option value="ESI Hospital">ESI Hospital</option>
+                    <option value="PMJAY Hospital">PMJAY Hospital</option>
+                    <option value="State Govt. Hospital">State Govt. Hospital</option>
+                  </select>
                 </div>
 
                 {/* REFERRING DOCTOR */}
@@ -684,7 +695,7 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
                 {/* ICD CODE */}
 
                 <div className="col-md-6">
-                  <label><span style={{"color": "red"}}>*</span> ICD Code</label>
+                  <label>ICD Code</label>
 
                   <input
                     className="form-control"
@@ -745,9 +756,9 @@ const ReferralModal = ({ show, onClose, user, referral, patient }) => {
               <>
                 <button
                   className="btn btn-esic"
-                  onClick={handlePartialApprove}
+                  onClick={handleApprove}
                 >
-                Partial Approve
+                Approve
                 </button>
 
                 <button

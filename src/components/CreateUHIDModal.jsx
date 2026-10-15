@@ -16,14 +16,14 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
   const [loadingSubDistricts, setLoadingSubDistricts] = useState(false);
 
   const [formData, setFormData] = useState({
-    firstName: "",
+    firstName: patient?.name || "",
     middleName: "",
     lastName: "",
     dob: patient?.dob || "",
     age: "",
     insuranceNo: patient?.ipNumber || "",
     insurenceSeq: patient?.ipListId || "0",
-    relationship: "",
+    relationship: patient.relationship || "",
     ageUOM: "Years",
     gender: patient?.sex === "M" || patient?.sex === "Male" ? "Male" : patient?.sex === "F" || patient?.sex === "Female" ? "Female" : "",
     marstatus: patient?.marstatus === "Married" ? "Married" : patient?.marstatus === "Unmarried" ? "Single" : "",
@@ -40,7 +40,7 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
       if (!show) return;
 
       calculateAge(patient?.dob);
-      // console.log(formData);
+      console.log(patient);
     
       const loadStates = async () => {
           setLoadingStates(true);
@@ -249,6 +249,7 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
                 <div className="col-md-4">
                   <input
                     className="form-control"
+                    value={formData.firstName}
                     onChange={(e)=>setFormData({...formData,firstName:e.target.value})}
                   />
                 </div>
@@ -323,17 +324,25 @@ export default function CreateUHIDModal({ show, onClose, patient }) {
               <label className="col-md-2 col-form-label">Relationship<span style={{color: "red"}}>*</span></label>
               <div className="col-md-4">
               <select
-              className="form-select"
-              value={formData.relationship}
-              onChange={(e)=>setFormData({...formData,relationship:e.target.value})}
-              >
-              <option value="">Select</option>
-              <option value="Self">Self</option>
-              <option value="Spouse">Spouse</option>
-              <option value="Son">Son</option>
-              <option value="Daughter">Daughter</option>
-              <option value="Father">Father</option>
-              <option value="Mother">Mother</option>
+                className="form-select"
+                value={formData.relationship}
+                onChange={(e)=>setFormData({...formData,relationship:e.target.value})}
+                >
+                <option value="">Select Relation</option>
+                <option value="Spouse">Spouse</option>
+                <option value="Minor dependant son">Minor dependant son</option>
+                <option value="Dependant unmarried daughter">Dependant unmarried daughter</option>
+                <option value="Dependant son receiving education">Dependant son receiving education</option>
+                <option value="Dependant infirm son">Dependant infirm son</option>
+                <option value="Dependant infirm unmarried daughter">Dependant infirm unmarried daughter</option>
+                <option value="Dependant father">Dependant father</option>
+                <option value="Dependant mother">Dependant mother</option>
+                <option value="Brother">Brother</option>
+                <option value="Sister">Sister</option>
+                {/* <option value="DEPENDANT SON- RECEIVING EDUCATION">DEPENDANT SON- RECEIVING EDUCATION</option> */}
+                <option value="Father In Law">Father In Law</option>
+                <option value="Mother In Law">Mother In Law</option>
+                <option value="Others">Others</option>
               </select>
               </div>
 

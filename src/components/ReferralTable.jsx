@@ -306,7 +306,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
                   <th>UHID</th>
                   <th>Patient Name</th>
                   <th>Created Date</th>
-                  <th width="150">Approved Referral Form</th>
+                  {/* <th width="150">Approved Referral Form</th> */}
                   <th>Status</th>
 
                   {isDoctor && <th style={{ width: "220px" }}>Actions</th>}
@@ -327,7 +327,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
                     <td>{indexOfFirst + index + 1}</td>
                     <td>
                       {/* {r.referralId} */}
-                      {r.referralStatus === "PARTIAL_APPROVED" ? (
+                      {r.referralStatus === "APPROVED" ? (
                         <a
                           href="#"
                           onClick={(e) => {
@@ -348,8 +348,8 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
                     </td>
                     <td>{r.beneficiaryId}</td>
                     <td>{r.beneficiaryName}</td>
-                    <td>{r.createdAt.split("T")[0]}</td>
-                    <td>
+                    <td>{r.createdAt ? r.createdAt.split("T")[0].split("-").reverse().join("-") : ""}</td>
+                    {/* <td>
                       {r.documentId && r.approvedFilePath ? (
                         <a
                           href="#"
@@ -388,7 +388,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
                           />
                         </label>
                       ))}
-                    </td>
+                    </td> */}
                     <td>{getStatusBadge(r.referralStatus)}</td>
 
                     {isDoctor &&
@@ -397,8 +397,8 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
                         r.referralStatus === "REJECTED"
                       ) && (
                         <td>
-                          {r.referralStatus != "PARTIAL_APPROVED" && (
-                            <FaUserEdit
+
+                          <FaUserEdit
                               onClick={() => handleEdit(r)}
                               style={{
                                 cursor: "pointer",
@@ -407,10 +407,9 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
                                 fontSize: "18px",
                               }}
                               title="Edit"
-                            />
-                          )}
+                          />
 
-                          <TiTick
+                          {/* <TiTick
                             onClick={() => handleApprove(r)}
                             style={{
                               cursor: "pointer",
@@ -419,7 +418,7 @@ const ReferralTable = ({ user, refreshTrigger, onEdit }) => {
                               fontSize: "18px",
                             }}
                             title="Approve"
-                          />
+                          /> */}
 
                           <MdCancel
                             onClick={() => handleDecline(r)}

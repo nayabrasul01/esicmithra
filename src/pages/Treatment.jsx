@@ -386,7 +386,7 @@ const Treatment = () => {
                                                         h.treatment.id
                                                     )}
                                                 </td>
-                                                <td>{h.treatment.createdAt ? h.treatment.createdAt.split('T')[0] : ''}</td>
+                                                <td>{h.treatment.createdAt ? h.treatment.createdAt.split('T')[0].split("-").reverse().join("-") : ''}</td>
                                                 {/* <td>{h.treatment.chiefComplaints}</td>
                                                 <td>{h.treatment.diagnosis}</td>
                                                 <td>{h.treatment.prescription}</td> */}

@@ -46,23 +46,25 @@ const PrescriptionForm = () => {
   const [historyLoading, setHistoryLoading] = React.useState(false);
 
 
-  const [canSubmit, setCanSubmit] = useState(false);
+  const [canSubmit, setCanSubmit] = useState(true); // Initially true to allow submission even if clinical data is empty, as per UAT testing.
 
-  useEffect(() => {
-    const clinicalValid =
-      !!patient &&
-      (clinical.symptoms || "").trim().length > 0 &&
-      (clinical.examFindings || "").trim().length > 0 &&
-      (clinical.bp || "").trim().length > 0 &&
-      (clinical.pulseRate || "").trim().length > 0 &&
-      (clinical.diagnosis || "").trim().length > 0 &&
-      selectedLabTests.length > 0 &&
-      selectedDrugs.length > 0;
+  // No validations required as per UAT testing. Hence commented out.
 
-    const uploadValid = file !== null && (clinical.remarks || "").trim().length > 0;
+  // useEffect(() => {
+  //   const clinicalValid =
+  //     !!patient &&
+  //     (clinical.symptoms || "").trim().length > 0 &&
+  //     (clinical.examFindings || "").trim().length > 0 &&
+  //     (clinical.bp || "").trim().length > 0 &&
+  //     (clinical.pulseRate || "").trim().length > 0 &&
+  //     (clinical.diagnosis || "").trim().length > 0 &&
+  //     selectedLabTests.length > 0 &&
+  //     selectedDrugs.length > 0;
 
-    setCanSubmit(clinicalValid || uploadValid);
-  }, [patient, clinical, file, selectedLabTests, selectedDrugs]);
+  //   const uploadValid = file !== null && (clinical.remarks || "").trim().length > 0;
+
+  //   setCanSubmit(clinicalValid || uploadValid);
+  // }, [patient, clinical, file, selectedLabTests, selectedDrugs]);
 
   const fileInputRef = React.useRef(null);
 
@@ -131,11 +133,9 @@ const PrescriptionForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    logger.info("Submitting prescription", {
-      patientId: patient?.id,
-      uhid: patient?.uhid,
-      hasDocument: Boolean(file),
-    });
+    if(!await confirm("Are you sure you want to save the prescription?"))
+      return;
+
     try {
       if(file){
         setSaving(true);
@@ -281,7 +281,7 @@ const PrescriptionForm = () => {
 
               <div className="col-md-2">
                 <div className="text-muted">DOB</div>
-                <div className="fw-semibold">{patient.dob || "-"}</div>
+                <div className="fw-semibold">{patient.dob.split(" ")[0] || "-"}</div>
               </div>
 
               <div className="col-md-2">
@@ -310,14 +310,14 @@ const PrescriptionForm = () => {
               <h5 className="fw-bold mb-3">Clinical Details</h5>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold"><span style={{color: "red"}}>* </span>Symptoms</label>
+                <label className="form-label fw-semibold">Symptoms</label>
                 <textarea
                   className="form-control"
                   rows={3}
                   name="symptoms"
                   value={clinical.symptoms}
                   onChange={handleClinicalChange}
-                  disabled={file}
+                  // disabled={file}
                   placeholder="Enter patient symptoms..."
                 />
               </div>
@@ -325,7 +325,7 @@ const PrescriptionForm = () => {
               <div className="row g-3 mb-3">
                 <div className="col-md-6">
                   <label className="form-label fw-semibold">
-                   <span style={{color: "red"}}>* </span>Blood Pressure (BP)
+                   Blood Pressure (BP)
                   </label>
                   <input
                     className="form-control"
@@ -338,16 +338,16 @@ const PrescriptionForm = () => {
                       if ((value === '' || /^\d*\/?(\d+)?$/.test(value)) && !exceedsDigits) {
                         handleClinicalChange(e);
                       } else if (exceedsDigits) {
-                        alert('Systolic or Diastolic values in BP cannot exceed more than three digits.');
+                        alert('Systolic or Diastolic values in BP cannot exceed more than three digits.', 'warning');
                       }
                     }}
-                    disabled={file}
+                    // disabled={file}
                     placeholder="e.g., 120/80"
                   />
                 </div>
 
                 <div className="col-md-6">
-                  <label className="form-label fw-semibold"><span style={{color: "red"}}>* </span>Pulse Rate</label>
+                  <label className="form-label fw-semibold">Pulse Rate</label>
                   <input
                     className="form-control"
                     name="pulseRate"
@@ -358,10 +358,10 @@ const PrescriptionForm = () => {
                       if ((value === '' || /^\d+$/.test(value)) && !exceedsDigits) {
                         handleClinicalChange(e);
                       } else if (exceedsDigits) {
-                        alert('Pulse rate cannot exceed three digits.');
+                        alert('Pulse rate cannot exceed three digits.', 'warning');
                       }
                     }}
-                    disabled={file}
+                    // disabled={file}
                     placeholder="e.g., 72"
                   />
                 </div>
@@ -369,7 +369,7 @@ const PrescriptionForm = () => {
 
               <div className="mb-3">
                 <label className="form-label fw-semibold">
-                  <span style={{color: "red"}}>* </span>Examination Findings
+                  Examination Findings
                 </label>
                 <textarea
                   className="form-control"
@@ -377,20 +377,20 @@ const PrescriptionForm = () => {
                   name="examFindings"
                   value={clinical.examFindings}
                   onChange={handleClinicalChange}
-                  disabled={file}
+                  // disabled={file}
                   placeholder="Enter examination findings..."
                 />
               </div>
 
               <div>
-                <label className="form-label fw-semibold"><span style={{color: "red"}}>* </span>Diagnosis</label>
+                <label className="form-label fw-semibold">Diagnosis</label>
                 <textarea
                   className="form-control"
                   rows={3}
                   name="diagnosis"
                   value={clinical.diagnosis}
                   onChange={handleClinicalChange}
-                  disabled={file}
+                  // disabled={file}
                   placeholder="Enter diagnosis..."
                 />
               </div>
@@ -411,7 +411,8 @@ const PrescriptionForm = () => {
             onRemove={(id) => {
               setSelectedLabTests((prev) => prev.filter((x) => x.id !== id));
             }}
-            enable={!file}
+            // enable={!file}
+            enable={true} // Commented as per UAT testing. lab tests can be added even when prescription file is uploaded.
           />
 
           {/* EDL Drugs - Search Multi Select */}
@@ -428,7 +429,8 @@ const PrescriptionForm = () => {
             onRemove={(id) => {
               setSelectedDrugs((prev) => prev.filter((x) => x.id !== id));
             }}
-            enable={!file}
+            // enable={!file}
+            enable={true} // Commented as per UAT testing. Drugs can be added even when prescription file is uploaded.
           />
 
           {/* Upload Prescription */}
@@ -476,7 +478,7 @@ const PrescriptionForm = () => {
 
           <div className="mt-3">
             <label className="form-label fw-semibold">
-            <span style={{color: "red"}}>* </span>  
+            {/* <span style={{color: "red"}}>* </span>   // Commented as per UAT observations */}
               Remarks
             </label>
             <textarea
@@ -485,7 +487,7 @@ const PrescriptionForm = () => {
               name="remarks"
               value={clinical.remarks}
               onChange={handleClinicalChange}
-              disabled={!file}
+              // disabled={!file} // Commented as per UAT observations
               placeholder="Note: Remarks are mandatory only when uploading prescription file."
               style={{ fontSize: "14px" }}
             />
@@ -557,7 +559,7 @@ const MultiSelectSearch = ({
     <div className="mb-4">
       {/* <h5 className="fw-bold mb-3"><span style={{color: "red"}}>* </span>{label}</h5> */}
       <label className="form-label fw-semibold">
-        <span style={{color: "red"}}>* </span>  
+        {/* <span style={{color: "red"}}>* </span> // not mandatory as per UAT testing   */} 
           {label}
       </label>
 

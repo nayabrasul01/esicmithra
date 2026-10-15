@@ -73,11 +73,12 @@ const SnomedSearch = ({ onSelect, initialValue }) => {
         res.data?.mapGroup?.[0]?.mappedICDCode || "";
 
       if(icdCode === "")
-        // showToast("No ICD code found for the given SNOMED CT search. Please try with other terms.", "warning");
-      await alert(
-        "No ICD code found for the given SNOMED CT search. Please try with other terms.",
-        "warning",
-      );
+        showToast("No ICD code found for the given SNOMED CT search.", "warning");
+      // Removed as per UAT testing.
+      // await alert(
+      //   "No ICD code found for the given SNOMED CT search. Please try with other terms.",
+      //   "warning",
+      // );
 
       onSelect({
         snomedDiagnosis: term,

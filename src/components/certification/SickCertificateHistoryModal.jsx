@@ -41,6 +41,12 @@ export default function SickCertificateHistoryModal({
     }
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "-NA-";
+    
+    return dateString.split("-").reverse().join("-");
+  }
+
   if (!show) return null;
 
   return (
@@ -83,14 +89,14 @@ export default function SickCertificateHistoryModal({
                         }
                       >
                         <div>
-                          <div className="fw-semibold">
+                          <div className="fw-normal">
                             <span className="text-esic">Certificate No. </span>
-                            {cert.certificateNumber || "-NA-"}
+                            <b>{cert.certificateNumber || "-NA-"}</b>
                           </div>
 
                           <div className="small">
-                            Certificate Type: {cert.certificateType} | Spell
-                            Type: {cert.spellType}
+                            Certificate Type: <b>{cert.certificateType}</b> | Spell
+                            Type: <b>{cert.spellType}</b>
                           </div>
                         </div>
 
@@ -107,9 +113,7 @@ export default function SickCertificateHistoryModal({
 
                           <div className="small mt-1">
                             First Certificate Date:{" "}
-                            {new Date(
-                              cert.certificateDetails?.firstCertificateDate,
-                            ).toLocaleDateString()}
+                            {formatDate(cert.certificateDetails?.firstCertificateDate)}
                           </div>
                         </div>
                       </div>
@@ -145,7 +149,7 @@ export default function SickCertificateHistoryModal({
                             </div>
                             <div className="col-md-4">
                               <strong>Visit Date:</strong>{" "}
-                              {cert.certificateDetails?.visitDate || "-NA-"}
+                              {formatDate(cert.certificateDetails?.visitDate)}
                             </div>
                           </div>
 
@@ -153,19 +157,19 @@ export default function SickCertificateHistoryModal({
                           <div className="row mb-2">
                             <div className="col-md-3">
                               <strong>Leave From:</strong>{" "}
-                              {cert.leaveDetails?.leaveFrom || "-NA-"}
+                              {formatDate(cert.leaveDetails?.leaveFrom)}
                             </div>
                             <div className="col-md-3">
                               <strong>Leave To:</strong>{" "}
-                              {cert.leaveDetails?.leaveTo || "-NA-"}
+                              {formatDate(cert.leaveDetails?.leaveTo)}
                             </div>
                             <div className="col-md-3">
                               <strong>Follow-up:</strong>{" "}
-                              {cert.leaveDetails?.followUpDate || "-NA-"}
+                              {formatDate(cert.leaveDetails?.followUpDate)}
                             </div>
                             <div className="col-md-3">
                               <strong>Fit Date:</strong>{" "}
-                              {cert.leaveDetails?.fitDate || "-NA-"}
+                              {formatDate(cert.leaveDetails?.fitDate)}
                             </div>
                           </div>
 

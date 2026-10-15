@@ -47,8 +47,7 @@ export default function PatientHistoryModal({
 
   // ✅ Filtering logic
   const filteredData = useMemo(() => {
-    // Slice the first item in historyData as the first item is the current treatment being added, not part of history
-    return historyData.slice(0).filter((item) => {
+    return historyData.filter((item) => {
       const t = item.treatment;
       const createdDate = new Date(t.createdAt);
 
@@ -157,7 +156,7 @@ const createFileLink = (blob, filename) => {
                         <input
                           type="text"
                           className="form-control"
-                          placeholder="Search diagnosis, complaints, doctor..."
+                          placeholder="Search symptoms, diagnosis, doctor..."
                           value={searchText}
                           onChange={(e) => setSearchText(e.target.value)}
                         />
@@ -254,7 +253,27 @@ const createFileLink = (blob, filename) => {
                         }
                       >
                         <strong>
-                          {new Date(t.createdAt).toLocaleString()}
+                          {(() => {
+                            const createdDate = new Date(t.createdAt);
+                            const today = new Date();
+                            const yesterday = new Date(today);
+                            today.setHours(0, 0, 0, 0);
+                            yesterday.setHours(0, 0, 0, 0);
+                            yesterday.setDate(yesterday.getDate() - 1);
+                            const date = new Date(createdDate);
+                            date.setHours(0, 0, 0, 0);
+                            const label = date.getTime() === today.getTime()
+                              ? "Today"
+                              : date.getTime() === yesterday.getTime()
+                                ? "Yesterday"
+                                : null;
+
+                            return <>{createdDate.toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            }).replace(/\//g, "-")}{label && ` (${label})`}</>;
+                          })()}
                         </strong>
                         <span>{isExpanded ? "▲" : "▼"}</span>
                       </div>
@@ -263,38 +282,64 @@ const createFileLink = (blob, filename) => {
                         <div className="card-body">
 
                           <div className="row mb-2">
-                            <div className="col-md-4">
+                            <div className="col-md-3">
+                              <span className="text-muted">BP</span>
+                              <div className="fw-semibold">{t.bloodPressure || "-"}</div>
+                            </div>
+                            <div className="col-md-3">
+                              <span className="text-muted">Pulse</span>
+                              <div className="fw-semibold">{t.pulse || "-"}</div>
+                            </div>
+                            <div className="col-md-3">
                               <span className="text-muted">Symptoms</span>
                               <div className="fw-semibold">
                                 {t.symptoms || "-"}
                               </div>
                             </div>
-                            <div className="col-md-4">
+                            <div className="col-md-3">
                               <span className="text-muted">Examination Findings</span>
                               <div className="fw-semibold">
                                 {t.examinationFindings || "-"}
                               </div>
                             </div>
-                            <div className="col-md-4">
+                          </div>
+
+                          <div className="row mb-2">
+                            <div className="col-md-3">
                               <span className="text-muted">Diagnosis</span>
                               <div className="fw-semibold">
                                 {t.diagnosis || "-"}
                               </div>
                             </div>
-                          </div>
-
-                          <div className="row mb-2">
-                            <div className="col-md-4">
-                              <span className="text-muted">BP</span>
-                              <div>{t.bloodPressure || "-"}</div>
+                            <div className="col-md-3">
+                              <span className="text-muted">Lab Tests</span>
+                              <div className="fw-semibold">
+                                {item.labTests?.length
+                                  ? item.labTests.map((test, index) => (
+                                      <span key={index}>
+                                        {test.labTest.name}
+                                        {index < item.labTests.length - 1 ? ", " : ""}
+                                      </span>
+                                    ))
+                                  : "-"}
+                              </div>
                             </div>
-                            <div className="col-md-4">
-                              <span className="text-muted">Pulse</span>
-                              <div>{t.pulse || "-"}</div>
+                            <div className="col-md-3">
+                              <span className="text-muted">EDL Drugs</span>
+                              <div className="fw-semibold">
+                                {item.edlDrugs?.length
+                                  ? item.edlDrugs.map((drug, index) => (
+                                      <span key={index}>
+                                        {drug.edlDrug.name}
+                                        {index < item.edlDrugs.length - 1 ? ", " : ""}
+                                      </span>
+                                    ))
+                                  : "-"}
+                              </div>
                             </div>
-                            <div className="col-md-4">
+                            <div className="col-md-3">
                               <span className="text-muted">Doctor</span>
-                              <div>{t.doctorUserId || "-"}</div>
+                              <div className="fw-semibold">{t.doctorUserId || "-"}</div>
                             </div>
                           </div>
 
@@ -302,8 +347,10 @@ const createFileLink = (blob, filename) => {
                           
                             <div className="mt-3">
                               <strong>Documents</strong>
-                                {(item.documents.length > 0 && item.documents.prescriptionFilePath) ? (
+                              {/* documents[0] is used, because as of now only one prescrption is stored per session per patient */}
+                                {(item.documents.length > 0 && item.documents[0].filePath) ? (
                                     <ul className="list-group mt-2">
+
                                         {item.documents.map((doc) => (
                                         <li
                                             key={doc.id}
@@ -325,7 +372,7 @@ const createFileLink = (blob, filename) => {
                                         </li>
                                         ))}
                                     </ul>)
-                                : <span>&nbsp; &nbsp; <MdErrorOutline /> No prescriptions found.</span>    
+                                : <span>&nbsp; &nbsp; <MdErrorOutline /> No written prescriptions found.</span>    
                                 }
                             </div>
                         </div>
